@@ -42,18 +42,43 @@ class weatherData {
         var latid;
         var temp;
         var description;
+        var humidity;
+        var city;
     }
 
-    setFrontEndText() {
-        try {
-            document.getElementById("weatherDescription").innerHTML = toTitleCase(this.temp + "° C, " +this.description);
-            const tempResult = this.description;
-            console.log(tempResult);
-        }
-        catch(ee) {
-            console.error(ee);
-        }
-        return 0;
+    //get Description for front end text
+    getTemp() {
+            return this.temp + "°C";
+    }
+    getDesc() {
+        return toTitleCase(this.description);
+    }
+
+    getCity() {
+        return "Baranggay " + this.city;
+    }
+    getHumid() {
+        return this.humidity;
+    }
+
+    //Setters for every function
+    setDesc(desc) {
+        this.description = desc;
+    }
+    setLongit(num) {
+        this.longit = num;
+    }
+    setLatid(num) {
+        this.latid = num;
+    }
+    setTemp(num) {
+        this.temp = num;
+    }
+    setCity(name) {
+        this.city = name;
+    }
+    setHumid(num) {
+        this.humidity = num;
     }
     
 }
@@ -75,8 +100,8 @@ function initGeolocation()
 
 function success(position)
      {
-        firstData.latid = position.coords.latitude;
-        firstData.longit = position.coords.longitude;
+        firstData.setLatid(position.coords.latitude);
+        firstData.setLongit(position.coords.longitude);
         getWeather();
      }  
 
@@ -94,15 +119,17 @@ async function getWeather() {
         }
     
         const json = await response.json();
-        firstData.temp = json['main']['feels_like'];
-        firstData.description = json['weather']['0']['description'];
-
-        firstData.setFrontEndText();
-      } 
+        firstData.setTemp(json['main']['feels_like']);
+        firstData.setDesc(json['weather']['0']['description']);
+        firstData.setCity(json['name']);
+        firstData.setHumid(json['main']['humidity']);
+      }
       
       catch (error) {
         console.error(error.message);
       }
+
+      setFrontEndText();
 }
 
 function toTitleCase(str) {
@@ -111,5 +138,12 @@ function toTitleCase(str) {
       text => text.charAt(0).toUpperCase() + text.substring(1).toLowerCase()
     );
   }
+
+function setFrontEndText() {
+    document.getElementById("weatherTemp").innerHTML = firstData.getTemp();
+    document.getElementById("weatherDescription").innerHTML = firstData.getDesc();
+    document.getElementById("cityName").innerHTML = firstData.getCity();
+    document.getElementById("humidity").innerHTML = firstData.getHumid();
+}
 
 initGeolocation();
