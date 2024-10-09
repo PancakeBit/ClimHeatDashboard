@@ -1,13 +1,4 @@
-//Import statements for Firebase
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js"
-import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js"
-
-const appsettings = {
-  databaseURL: "https://climheat-5f408-default-rtdb.asia-southeast1.firebasedatabase.app/"
-}
-
-const app = initializeApp(appsettings);
-const database = getDatabase(app);
+import { getDataFromFirebase } from './firebaseconnections.js';
 
 //Store today's date in a variable
 var today = new Date();
@@ -19,23 +10,14 @@ var dashboardDate = document.getElementById("date-today");
 dashboardDate.innerHTML = day + " " + month + " " + year;
 dashboardDate.style.display="block";
 
-const weatherdata = ref(database, day+month+year)
-
 //console.log(day+month+year);
 
-//----------------------------Firebase------------------------------------------------------------------------------
-//Get button and add pushToDatabase as a function to it.
-//var btn = document.getElementById("pushtodb");
-//btn.onclick = pushToDatabase;
 
-//function pushToDatabase() {
-//      console.log(push(weatherdata, "32.7"));
-//}
-//----------------------------Firebase------------------------------------------------------------------------------
 
 //Get Data from OpenWeatherMap
-
 const apikey = "ab3b138474fe3eec33d92c308fd27126";
+
+//Class data structure of the current weather data for clear get, set, and methods requiring current weather data
 class weatherData {
     constructor(){
         var longit;
@@ -55,7 +37,7 @@ class weatherData {
     }
 
     getCity() {
-        return "Baranggay " + this.city;
+        return this.city;
     }
     getHumid() {
         return this.humidity;
@@ -80,10 +62,9 @@ class weatherData {
     setHumid(num) {
         this.humidity = num;
     }
-    
 }
 
-var firstData = new weatherData();
+var currentWeather = new weatherData();
 
 function initGeolocation()
      {
@@ -100,10 +81,10 @@ function initGeolocation()
 
 function success(position)
      {
-        firstData.setLatid(position.coords.latitude);
-        firstData.setLongit(position.coords.longitude);
+        currentWeather.setLatid(position.coords.latitude);
+        currentWeather.setLongit(position.coords.longitude);
         getWeather();
-     }  
+     }
 
 function fail()
      {
@@ -111,7 +92,7 @@ function fail()
      }
 
 async function getWeather() {
-    var getWeatherAPI = `https://api.openweathermap.org/data/2.5/weather?lat=${firstData.latid}&lon=${firstData.longit}&units=metric&appid=${apikey}`;
+    const getWeatherAPI = `https://api.openweathermap.org/data/2.5/weather?lat=${currentWeather.latid}&lon=${currentWeather.longit}&units=metric&appid=${apikey}`;
     try {
         const response = await fetch(getWeatherAPI);
         if (!response.ok) {
@@ -119,10 +100,10 @@ async function getWeather() {
         }
     
         const json = await response.json();
-        firstData.setTemp(json['main']['feels_like']);
-        firstData.setDesc(json['weather']['0']['description']);
-        firstData.setCity(json['name']);
-        firstData.setHumid(json['main']['humidity']);
+        currentWeather.setTemp(json['main']['feels_like']);
+        currentWeather.setDesc(json['weather']['0']['description']);
+        currentWeather.setCity(json['name']);
+        currentWeather.setHumid(json['main']['humidity']);
       }
       
       catch (error) {
@@ -140,10 +121,47 @@ function toTitleCase(str) {
   }
 
 function setFrontEndText() {
-    document.getElementById("weatherTemp").innerHTML = firstData.getTemp();
-    document.getElementById("weatherDescription").innerHTML = firstData.getDesc();
-    document.getElementById("cityName").innerHTML = firstData.getCity();
-    document.getElementById("humidity").innerHTML = firstData.getHumid();
+    document.getElementById("weatherTemp").innerHTML = currentWeather.getTemp();
+    document.getElementById("weatherDescription").innerHTML = currentWeather.getDesc();
+    document.getElementById("cityName").innerHTML = currentWeather.getCity();
+    document.getElementById("humidity").innerHTML = currentWeather.getHumid();
 }
 
+function sortTempData(tempdata) {
+    let temps = Object.entries (tempdata);
+    temps.sort(([, valueA], [, valueB]) => valueB - valueA);
+    const sortedJson = Object.fromEntries(temps);
+
+    return sortedJson;
+}
+
+async function fillTable(tableId, jsonData) {
+    const sortedtemps = sortTempData(jsonData);
+    var tableHTML = "<thead>";
+    tableHTML += '<tr>';
+    tableHTML += '<th scope="col">Barangay</th>'
+    tableHTML += '<th scope="col">Area</th>'
+    tableHTML += '<th scope="col">Heat Index</th>'
+    tableHTML += '<tr>';
+    tableHTML += "</thead>";
+    
+    tableHTML += "<tbody>";
+    for (var eachItem in sortedtemps) {
+      tableHTML += "<tr>";
+      tableHTML += "<td>" + eachItem + "</td>";
+      tableHTML += "<td>Bridgetown</td>"
+      tableHTML += "<td>" + jsonData[eachItem] + "</td>";
+      tableHTML += "</tr>";
+    }
+    tableHTML += "</tbody>";
+    document.getElementById(tableId).innerHTML = tableHTML;
+}
+
+//Initialize Geolocation and grabbing weather data from OpenWeatherMap
 initGeolocation();
+
+//Get Data from Firebase and then use that data to fill the table
+getDataFromFirebase().then(data => {
+    fillTable("table.highesttemp", data)
+    })
+  .catch(error => console.error("Error:", error));
