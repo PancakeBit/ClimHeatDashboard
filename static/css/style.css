@@ -1,0 +1,140 @@
+body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+  
+  background-image: url("../images/qc1.jpg");
+  background-size: cover;
+  background-repeat: no-repeat;
+  position: relative; /* Set relative to apply ::before */
+}
+
+body::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 140, 186, 0.3); /* Black color with 0.2 opacity */
+  z-index: 0; /* Put it behind other content */
+}
+
+.main-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch;
+  width: 60%;
+  position: relative;
+  z-index: 1; /* Ensure it stays above the background overlay */
+}
+
+
+.main-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch;
+  width: 60%;
+  position: relative;
+}
+
+.main-container::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.6); /* Adjust the color and opacity as needed */
+  z-index: -1;
+  border-radius: 10px; /* Optional: Add border-radius if needed */
+}
+
+.container, .button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+
+/* Full-width inputs */
+input[type=text], input[type=password] {
+  padding: 12px 20px;
+  border: 1px solid #ccc;
+  box-sizing: border-box;
+  margin: 10px;
+  width: 300px;
+}
+
+.btn-custom {
+  background-color: rgba(0, 140, 186, 1);
+  color: white;
+  padding: 14px 25px;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.btn-custom:hover {
+  opacity: 0.8;
+}
+
+.container {
+  box-shadow:
+  0px 0px 2.2px rgba(0, 0, 0, 0.02),
+  0px 0px 5.3px rgba(0, 0, 0, 0.028),
+  0px 0px 10px rgba(0, 0, 0, 0.035),
+  0px 0px 17.9px rgba(0, 0, 0, 0.042),
+  0px 0px 33.4px rgba(0, 0, 0, 0.05),
+  0px 0px 80px rgba(0, 0, 0, 0.07);
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.image-container {
+  position: relative;
+  width: 50%;
+  background-color: rgb(0, 140, 186,1);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.image-container img {
+  display: block;
+  width: 75%; /* Ensure the image takes the full width of the container */
+  height: auto;
+  margin: auto;
+}
+
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 140, 186, 1); /* Add some transparency */
+  opacity: 0; /* Start with the overlay hidden */
+  transition: .5s ease;
+}
+
+.image-container:hover .overlay {
+  opacity: 1; /* Show the overlay on hover */
+}
+
+.text {
+  white-space: nowrap; 
+  text-align: center;
+  color: white;
+  font-size: 18px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  -ms-transform: translate(-50%, -50%);
+}

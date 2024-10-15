@@ -31,18 +31,18 @@
     <nav class="sidenav">
       <ul class="navbar-list">
         <li class="nav-item py-5 font-weight-bold">
-          <a href="../templates/index.html"
+          <a href="{{url_for('home')}}"
             ><h4 class="link-text">ClimHeat</h4></a
           >
         </li>
         <li class="nav-item">
-          <a href="../templates/index.html"
+          <a href="{{url_for('home')}}"
             ><span class="link-text active">Home</span></a
           >
         </li>
 
         <li class="nav-item">
-          <a href="../templates/oview.html"
+          <a href="{{url_for('overviewPage')}}"
             ><span class="link-text">Overview</span></a
           >
         </li>
@@ -54,12 +54,12 @@
         </li>
 
         <li class="nav-item">
-          <a href="../templates/districts.html"
+          <a href="{{url_for('districtsPage')}}"
             ><span class="link-text">Districts</span></a
           >
         </li>
         <li class="nav-item">
-          <a href="#"><span class="btn btn-dark">Log Out</span></a>
+          <a href="{{url_for('logout')}}"><span class="btn btn-dark">Log Out</span></a>
         </li>
       </ul>
     </nav>
@@ -145,7 +145,7 @@
             <div class="row card-body p-4">
               <div class="col-xl-3 col-md-12 text-center">
                 <p id="cityName" class="font-weight-bold"></p>
-                <img src="../static/images/cloudy.svg" width="50px"/>
+                <img src="static/images/cloudy.svg" width="50px"/>
                 <p id="weatherTemp"></p>
                 <p id="weatherDescription" class="font-weight-bold">Loading...</p>
               </div>
@@ -168,28 +168,8 @@
               <h5 class="card-title">Barangay with High Heat</h5>
               <thead>
                 <tr>
-                  <th scope="col">Barangay</th>
-                  <th scope="col">Area</th>
-                  <th scope="col">Heat Index</th>
+                  <th scope="col">Highest Heat Index not Set in Database</th>
                 </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>Caloocan</td>
-                  <td>Bridgetown</td>
-                  <td>50.3</td>
-                </tr>
-                <tr>
-                  <td>Mars</td>
-                  <td>Marvel</td>
-                  <td>60.8</td>
-                </tr>
-                <tr>
-                  <td>Larry</td>
-                  <td>Bird</td>
-                  <td>400.5</td>
-                </tr>
-              </tbody>
             </table>
           </div>
         </div>
