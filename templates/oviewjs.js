@@ -90,3 +90,57 @@ function initMap() {
 
 // Initialize the map once the page is loaded
 window.onload = initMap;
+
+// Function to fetch 5-day weather forecast data from OpenWeather API
+async function getWeatherData() {
+  const apiKey = '630c0f7f455572c8c3ef3f3551c5b2ec'; // Replace with your OpenWeather API key
+  const city = 'Quezon City'; // Replace with the desired city
+  const apiUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${city}&units=metric&appid=${apiKey}`;
+
+  try {
+    const response = await fetch(apiUrl);
+    const data = await response.json();
+
+    // Filter the forecast data to get 1 forecast per day (e.g., at 12:00 PM)
+    const dailyForecast = data.list.filter(item => item.dt_txt.includes("12:00:00"));
+
+    // Render the forecast data
+    renderWeatherForecast(dailyForecast);
+  } catch (error) {
+    console.error("Error fetching weather data:", error);
+  }
+}
+
+// Function to render the weather forecast into the HTML
+function renderWeatherForecast(forecastData) {
+  const forecastContainer = document.getElementById('forecast-container');
+  forecastContainer.innerHTML = ''; // Clear any existing content
+
+  forecastData.forEach(day => {
+    const date = new Date(day.dt_txt).toLocaleDateString('en-US', { weekday: 'long' });
+    const temp = Math.round(day.main.temp); // Temperature in °C
+    const heatIndex = Math.round(day.main.feels_like); // Feels-like temperature
+    const icon = day.weather[0].icon; // Weather icon
+    const iconUrl = `http://openweathermap.org/img/wn/${icon}@2x.png`; // Icon URL
+
+    // Create a Bootstrap card for each day's forecast
+    const cardHtml = `
+      <div class="col-md-2">
+        <div class="card text-center" style="width: 100%;">
+          <p class="card-text">${date}</p>
+          <img src="${iconUrl}" class="card-img-top" alt="Weather Icon">
+          <div class="card-body">
+            <p class="card-text">${temp}°C temp</p>
+            <p class="card-text">${heatIndex}°C Heat Index</p>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Insert the card into the forecast container
+    forecastContainer.innerHTML += cardHtml;
+  });
+}
+
+// Fetch weather data on page load
+getWeatherData();
