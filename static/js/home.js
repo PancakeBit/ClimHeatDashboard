@@ -128,11 +128,11 @@ function setFrontEndText() {
 }
 
 function sortTempData(tempdata) {
-    let temps = Object.entries (tempdata);
-    temps.sort(([, valueA], [, valueB]) => valueB - valueA);
-    const sortedJson = Object.fromEntries(temps);
+    let baranggayArray = Object.entries(tempdata);
+    baranggayArray.sort((a, b) => b[1].hottest_temp - a[1].hottest_temp);
+    const sortedData = Object.fromEntries(baranggayArray);
 
-    return sortedJson;
+    return sortedData;
 }
 
 async function fillTable(tableId, jsonData) {
@@ -140,17 +140,17 @@ async function fillTable(tableId, jsonData) {
     var tableHTML = "<thead>";
     tableHTML += '<tr>';
     tableHTML += '<th scope="col">Barangay</th>'
-    tableHTML += '<th scope="col">Area</th>'
+    tableHTML += '<th scope="col">Description</th>'
     tableHTML += '<th scope="col">Heat Index</th>'
     tableHTML += '<tr>';
     tableHTML += "</thead>";
-    
+
     tableHTML += "<tbody>";
     for (var eachItem in sortedtemps) {
       tableHTML += "<tr>";
       tableHTML += "<td>" + eachItem + "</td>";
-      tableHTML += "<td>Bridgetown</td>"
-      tableHTML += "<td>" + jsonData[eachItem] + "</td>";
+      tableHTML += "<td>" + toTitleCase(jsonData[eachItem]['description']) + "</td>"
+      tableHTML += "<td>" + jsonData[eachItem]['hottest_temp'] + "</td>";
       tableHTML += "</tr>";
     }
     tableHTML += "</tbody>";
