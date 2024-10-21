@@ -35,7 +35,7 @@
             left: 0;
             height: 150%;
             width: 200px;
-            background: rgba(251, 112, 19);
+            background: rgba(251, 112, 19,0.1);
             padding: 2px;
             box-shadow:
                 1.9px 1.1px 2.9px -4px rgba(0, 0, 0, 0.039),
@@ -47,8 +47,7 @@
         }
 
         body {
-            background-image: url(bg.jpg);
-            background-position: 100% 80%;
+            background-image: url(./../static/images/bg.jpg);
             background-size: cover;
             background-repeat: no-repeat;
         }
@@ -136,13 +135,13 @@
                     <!-- Update the Generate Report Button -->
                     <a class="btn btn-primary" href="#" role="button" data-bs-toggle="modal" data-bs-target="#reportModal">Generate Report</a>
 
-                    <div class="row row-cols-2 row-cols-lg-6 justify-content-center mt-3 text-center">
+                    <div id="weather-data" class="row row-cols-2 row-cols-lg-6 justify-content-center mt-3 text-center">
                         <div class="col bg-dark text-light">Barangay</div>
                         <div class="col bg-dark text-light">Heat Index</div>
                         <div class="col bg-dark text-light">Temperature</div>
                         <div class="col bg-dark text-light">Effect Based Classification</div>
                         <div class="col bg-dark text-light">Description</div>
-                        <div id="weather-data" class="text-dark w-100 text-center h6"></div>
+
                     </div>
                 </div>
             </div>

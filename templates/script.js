@@ -52,11 +52,9 @@ function fetchWeatherData(barangay, apiKey) {
             const heatIndex = calculateHeatIndex(temperature, humidity);
             const { classification, description } = getHeatIndexInfo(heatIndex);
 
-            const weatherDataDiv = document.getElementById('weather-data');
-            const barangayDiv = document.createElement('div');
-            barangayDiv.classList.add('row', 'w-100');
+            var weatherDataDiv = document.getElementById('weather-data');
 
-            barangayDiv.innerHTML = `
+            weatherDataDiv.innerHTML += `
                 <div class="col">${barangay.name}</div>
                 <div class="col">${heatIndex.toFixed(2)} °C</div>
                 <div class="col">${temperature.toFixed(2)} °C</div>
