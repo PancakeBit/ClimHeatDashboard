@@ -1,4 +1,4 @@
-    <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -9,6 +9,7 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
     <script src="script.js" defer></script>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -18,72 +19,71 @@
         .col {
             margin: 5px;
             padding: 10px;
-            background-color: rgb(255, 255, 255,0.4);
+            background-color: rgba(255, 255, 255, 0.4);
             box-shadow:
-                    3.7px 2.8px 2.2px rgba(0, 0, 0, 0.02),
-                    8.8px 6.7px 5.3px rgba(0, 0, 0, 0.028),
-                    16.7px 12.5px 10px rgba(0, 0, 0, 0.035),
-                    29.7px 22.3px 17.9px rgba(0, 0, 0, 0.042),
-                    55.6px 41.8px 33.4px rgba(0, 0, 0, 0.05),
-                    133px 100px 80px rgba(0, 0, 0, 0.07)
-                    ;
+                3.7px 2.8px 2.2px rgba(0, 0, 0, 0.02),
+                8.8px 6.7px 5.3px rgba(0, 0, 0, 0.028),
+                16.7px 12.5px 10px rgba(0, 0, 0, 0.035),
+                29.7px 22.3px 17.9px rgba(0, 0, 0, 0.042),
+                55.6px 41.8px 33.4px rgba(0, 0, 0, 0.05),
+                133px 100px 80px rgba(0, 0, 0, 0.07);
         }
-            .sidebar {
-                position: fixed;
-                top: 0;
-                left: 0;
-                height: 150%;
-                width: 200px;
-                background: rgba(251,112,19,);
-                padding: 2px;
-                box-shadow:
-                    1.9px 1.1px 2.9px -4px rgba(0, 0, 0, 0.039),
-                    4.6px 2.7px 7px -4px rgba(0, 0, 0, 0.057),
-                    8.6px 5.1px 13.1px -4px rgba(0, 0, 0, 0.07),
-                    15.4px 9.2px 23.5px -4px rgba(0, 0, 0, 0.083),
-                    28.8px 17.1px 43.9px -4px rgba(0, 0, 0, 0.101),
-                    69px 41px 105px -4px rgba(0, 0, 0, 0.14)
-                    ;
-            }
 
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 150%;
+            width: 200px;
+            background: rgba(251, 112, 19);
+            padding: 2px;
+            box-shadow:
+                1.9px 1.1px 2.9px -4px rgba(0, 0, 0, 0.039),
+                4.6px 2.7px 7px -4px rgba(0, 0, 0, 0.057),
+                8.6px 5.1px 13.1px -4px rgba(0, 0, 0, 0.07),
+                15.4px 9.2px 23.5px -4px rgba(0, 0, 0, 0.083),
+                28.8px 17.1px 43.9px -4px rgba(0, 0, 0, 0.101),
+                69px 41px 105px -4px rgba(0, 0, 0, 0.14);
+        }
 
-            body{
-                background-image: url(bg.jpg);
-                background-position: 100% 80%;
-                background-size: cover;
-                background-repeat: no-repeat;
-            }
+        body {
+            background-image: url(bg.jpg);
+            background-position: 100% 80%;
+            background-size: cover;
+            background-repeat: no-repeat;
+        }
     </style>
 </head>
 
 <body>
     <div class="container-fluid">
-              <!-- Top Navbar -->
-      <nav class="navbar navbar-expand-lg mb-4">
-        <div class="container-fluid">
-          <div class="d-flex flex-row-reverse align-items-center w-100">
-            <!-- User Info -->
-            <div class="userinfo me-3">
-              <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
-                <span class="text-gray-600 small">Grpaosidnmoasidn</span>
-                <img class="img-profile rounded-circle" width="30px" src="../static/images/user.png" />
-              </a>
-            </div>
+        <!-- Top Navbar -->
+        <nav class="navbar navbar-expand-lg mb-4">
+            <div class="container-fluid">
+                <div class="d-flex flex-row-reverse align-items-center w-100">
+                    <!-- User Info -->
+                    <div class="userinfo me-3">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            <span class="text-gray-600 small">Grpaosidnmoasidn</span>
+                            <img class="img-profile rounded-circle" width="30px" src="../static/images/user.png" />
+                        </a>
+                    </div>
 
-            <!-- Notification -->
-            <div class="notification me-3">
-              <svg width="30px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M9.00195 17H5.60636C4.34793 17 3.71872 17 3.58633 16.9023C3.4376 16.7925 3.40126 16.7277 3.38515 16.5436C3.37082 16.3797 3.75646 15.7486 4.52776 14.4866C5.32411 13.1835 6.00031 11.2862 6.00031 8.6C6.00031 7.11479 6.63245 5.69041 7.75766 4.6402C8.88288 3.59 10.409 3 12.0003 3C13.5916 3 15.1177 3.59 16.2429 4.6402C17.3682 5.69041 18.0003 7.11479 18.0003 8.6C18.0003 11.2862 18.6765 13.1835 19.4729 14.4866C20.2441 15.7486 20.6298 16.3797 20.6155 16.5436C20.5994 16.7277 20.563 16.7925 20.4143 16.9023C20.2819 17 19.6527 17 18.3943 17H15.0003M9.00195 17L9.00031 18C9.00031 19.6569 10.3435 21 12.0003 21C13.6572 21 15.0003 19.6569 15.0003 18V17M9.00195 17H15.0003" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
+                    <!-- Notification -->
+                    <div class="notification me-3">
+                        <svg width="30px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M9.00195 17H5.60636C4.34793 17 3.71872 17 3.58633 16.9023C3.4376 16.7925 3.40126 16.7277 3.38515 16.5436C3.37082 16.3797 3.75646 15.7486 4.52776 14.4866C5.32411 13.1835 6.00031 11.2862 6.00031 8.6C6.00031 7.11479 6.63245 5.69041 7.75766 4.6402C8.88288 3.59 10.409 3 12.0003 3C13.5916 3 15.1177 3.59 16.2429 4.6402C17.3682 5.69041 18.0003 7.11479 18.0003 8.6C18.0003 11.2862 18.6765 13.1835 19.4729 14.4866C20.2441 15.7486 20.6298 16.3797 20.6155 16.5436C20.5994 16.7277 20.563 16.7925 20.4143 16.9023C20.2819 17 19.6527 17 18.3943 17H15.0003M9.00195 17L9.00031 18C9.00031 19.6569 10.3435 21 12.0003 21C13.6572 21 15.0003 19.6569 15.0003 18V17M9.00195 17H15.0003"
+                                stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </div>
+
+                    <!-- Search Box -->
+                    <div class="search-box me-3">
+                        <input type="text" class="form-control" placeholder="Search..." />
+                    </div>
+                </div>
             </div>
-            
-            <!-- Search Box -->
-            <div class="search-box me-3">
-              <input type="text" class="form-control" placeholder="Search..." />
-            </div>
-          </div>
-        </div>
-      </nav>
+        </nav>
 
         <!-- Sidebar and Main Content -->
         <div class="row">
@@ -102,51 +102,47 @@
             <!-- Main Content -->
             <div class="col-md-10 offset-md-2 d-flex justify-content-center align-items-center">
                 <div class="container">
-                   
                     <!-- Modal for Report Generation -->
-<div class="modal fade" id="generateReportModal" tabindex="-1" aria-labelledby="generateReportModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="generateReportModalLabel">Generate Report</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form id="reportForm">
-                    <div class="mb-3">
-                        <label for="startDate" class="form-label">Select Start Date</label>
-                        <input type="date" id="startDate" class="form-control" required>
+                    <div class="modal fade" id="reportModal" tabindex="-1" aria-labelledby="reportModalLabel" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="reportModalLabel">Generate Report</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="mb-3">
+                                        <label for="dateRange" class="form-label">Select Date Range</label>
+                                        <select id="dateRange" class="form-select">
+                                            <option value="daily">Daily</option>
+                                            <option value="weekly">Weekly</option>
+                                            <option value="monthly">Monthly</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="fileType" class="form-label">Select File Type</label>
+                                        <select id="fileType" class="form-select">
+                                            <option value="pdf">PDF</option>
+                                            <option value="json">JSON</option>
+                                            <option value="csv">CSV</option>
+                                        </select>
+                                    </div>
+                                    <button id="generateReport" class="btn btn-primary">Generate</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label for="endDate" class="form-label">Select End Date</label>
-                        <input type="date" id="endDate" class="form-control" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="fileFormat" class="form-label">File Format</label>
-                        <select id="fileFormat" class="form-control" required>
-                            <option value="json">JSON</option>
-                            <option value="csv">CSV</option>
-                            <option value="pdf">PDF</option>
-                        </select>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Generate</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
 
-<!-- Update the Generate Report Button -->
-<a name="" id="" class="btn btn-primary" href="#" role="button" data-bs-toggle="modal" data-bs-target="#generateReportModal">Generate Report</a>
+                    <!-- Update the Generate Report Button -->
+                    <a class="btn btn-primary" href="#" role="button" data-bs-toggle="modal" data-bs-target="#reportModal">Generate Report</a>
 
-
-                    
-                    <div id="weather-data" class="row row-cols-2 row-cols-lg-6 justify-content-center mt-3 text-center">
-                        <div class="col bg-dark text-light ">Barangay</div>
-                        <div class="col bg-dark text-light ">Heat Index</div>
-                        <div class="col bg-dark text-light ">Temperature</div>
-                        <div class="col bg-dark text-light ">Effect Based Classification</div>
-                        <div class="col bg-dark text-light ">Description</div>
+                    <div class="row row-cols-2 row-cols-lg-6 justify-content-center mt-3 text-center">
+                        <div class="col bg-dark text-light">Barangay</div>
+                        <div class="col bg-dark text-light">Heat Index</div>
+                        <div class="col bg-dark text-light">Temperature</div>
+                        <div class="col bg-dark text-light">Effect Based Classification</div>
+                        <div class="col bg-dark text-light">Description</div>
+                        <div id="weather-data" class="text-dark w-100 text-center h6"></div>
                     </div>
                 </div>
             </div>

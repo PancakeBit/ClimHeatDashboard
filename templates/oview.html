@@ -35,6 +35,10 @@
         .weather-details h5 {
           font-weight: bold;
         }
+        #forecast-container::before {
+          content: "";
+          opacity: 0.2;
+        }
       </style>
     </head>
 
@@ -78,10 +82,10 @@
           <div class="row mb-4">
             <!-- Left Column -->
             <div class="col-lg-6 col-md-12 mb-5">
-              <div class="card">
+              <div class="card">  
                 <div class="card-body">
                   <h5 class="card-title">QCDRRMO</h5>
-                  <div class="iframe-container">
+                  <div class="iframe-container mb-5">
                     <iframe src="https://www.facebook.com/plugins/page.php?href=https%3A%2F%2Fwww.facebook.com%2Fqcdrrmc%2F&tabs=timeline&width=800&height=500&small_header=true&adapt_container_width=true&hide_cover=true&show_facepile=false&appId" scrolling="no" frameborder="0" allowfullscreen="true"></iframe>
                   </div>
                 </div>
@@ -95,25 +99,23 @@
                   <p>August 30, 2024</p>
 
                   <!-- Weather Map -->
-                  <div id="map" class="map-container"></div>
-                  
-                  <!-- Weather Details -->
-                  <div class="weather-details">
-                    <h5>Weather Information:</h5>
-                    <p id="weather-description"></p>
-                    <p id="temperature"></p>
-                    <p id="humidity"></p>
-                  </div>
+                  <div id="map" class="map-container mb-2"></div>
                 </div>
               </div>
             </div>
 
-            <div class="card" style="width: 18rem;">
-              <img src="./../static/images/favicon.png" class="card-img-top" alt="...">
-              <div class="card-body">
-                <p class="card-text">27 C</p>
+            <div class="container mt-4">
+              <div class="row justify-content-center" id="forecast-container">
+                <!-- Weather forecast cards will be populated here by JavaScript -->
               </div>
-            </div>  
+            </div>
+            
+
+            
+            
+              </div>
+            </div>
+            
 
           </div>
         </div>
