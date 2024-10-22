@@ -142,7 +142,7 @@ def overviewPage():
 def districtsPage():
     return render_template("districts.html")
 
-async def UpdateFirebaseRealtimeDB():
+async def updateFirebaseRealtimeDB():
     today = datetime.today().strftime('%d%B%Y')
     sorted_data = getHighestTempsForBarangays()
     ref = db.reference('Barangay List/' + today)  # Adjust the Firebase path as needed
@@ -193,15 +193,15 @@ def timeUntilMidnight():
     return (next_midnight - now).total_seconds()
 
 dataInputtedToday = False
-def check_if_data_exists_for_today():
+def checkIfDataExistsForToday():
     today = datetime.today().strftime('%d%B%Y')
     todaystemps = db.reference("/Barangay List/" + today)
     dataToday = todaystemps.get()
     return dataToday is not None  # Return True if data exists, False if not
 
-def check_data_on_startup():
+def checkDataOnStartup():
     global dataInputtedToday
-    dataInputtedToday = check_if_data_exists_for_today()
+    dataInputtedToday = checkIfDataExistsForToday()
     if dataInputtedToday:
         print("Today's data already exists in Firebase.")
     else:
@@ -215,7 +215,7 @@ async def runAtMidnight():
         print("Data for today already exists. Skipping today's update.")
     else:
         # Update Firebase right away if data hasn't been inputted yet
-        await UpdateFirebaseRealtimeDB()
+        await updateFirebaseRealtimeDB()
 
     while True:
         # Try to get today's temperature from firebase
@@ -225,12 +225,32 @@ async def runAtMidnight():
         await asyncio.sleep(seconds_until_midnight)
         # TODO: If database is empty at the time of running the server, then run this function once
         # Run the Firebase update at midnight
-        await UpdateFirebaseRealtimeDB()
+        await updateFirebaseRealtimeDB()
 
+def classifyClothing(temp, description):
+    recommendation = ""
+
+    # Classify based on temperature
+    if temp > 35:
+        recommendation += "It is extremely hot, please stay hydrated and wear light clothing."
+    elif 35 <= temp > 30:
+        recommendation += "Wear light clothing like shorts and a t-shirt."
+    elif 20 <= temp <= 30:
+        recommendation += "Comfortable casual clothing, such as a t-shirt and jeans, is recommended."
+    elif 10 <= temp < 20:
+        recommendation += "It's getting cooler, consider wearing a light jacket and long sleeves."
+    else:
+        recommendation += "It's cold, wear warm clothing like a heavy jacket, scarf, and gloves."
+
+    # Additions based on weather description
+    if "rain" in description.lower():
+        recommendation += " Don't forget an umbrella."
+
+    return recommendation
 
 
 async def main():
-    check_data_on_startup()
+    checkDataOnStartup()
 
     # Start both the web server and the scheduled task concurrently
     await asyncio.gather(
