@@ -1,13 +1,13 @@
 import threading
 
 import firebase_admin
-import schedule
-import time
+import secrets
+from socket import gethostname
 import requests
 import asyncio
 from datetime import datetime, timedelta
-from flask import Flask, render_template, redirect, url_for, request, flash
-from firebase_admin import credentials, firestore, db
+from flask import Flask, render_template, redirect, url_for, request, flash, session
+from firebase_admin import credentials, firestore, db, auth
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, login_user, login_required, logout_user, UserMixin, current_user
 from flask_jwt_extended import JWTManager, create_access_token
@@ -17,12 +17,12 @@ from flask_jwt_extended import JWTManager, create_access_token
 # Create a Flask application instance
 app = Flask(__name__)
 # TODO: SET ACTUAL SECRET KEY AS A RANDOMLY GENERATED STRING
-app.config['SECRET_KEY'] = 'your_secret_key'
+app.config['SECRET_KEY'] = secrets.token_urlsafe(16)
 login_manager = LoginManager(app)
 bcrypt = Bcrypt(app)
 jwt = JWTManager(app)
 
-# Initialize Firebase credentials
+# Initialize Firebase credentials, use absolute path when uploading to Python Anywhere
 cred = credentials.Certificate('static/climheat-key.json')
 firebase_admin.initialize_app(cred, {
     'databaseURL': 'https://climheat-5f408-default-rtdb.asia-southeast1.firebasedatabase.app/'
@@ -57,23 +57,19 @@ class User(UserMixin):
 def register():
     if request.method == 'POST':
         # TODO: Add error catch if user fails to register or if username/user_id is already registered
-        username = request.form.get('username')
-        password = request.form.get('password')
-        perms = "default"
-
-        # Hash the password
-        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-
-        # Add user to Firebase Realtime Database
-        user_ref = fsdb.collection('users').document(f"{username}")
-        user_ref.set({
-            'username': username,
-            'password': hashed_password,
-            'perms' : perms
-        })
-        # Once registration is done, redirect to Login page
-        flash('Account created successfully!', 'success')
-        return redirect(url_for('login'))
+        email = request.form['email']
+        password = request.form['password']
+        try:
+            # Create the user in Firebase Authentication
+            user = auth.create_user(
+                email=email,
+                password=password
+            )
+            flash('Account created successfully! You can now log in.', 'success')
+            return redirect(url_for('login'))
+        except Exception as e:
+            flash(f'Error creating user: {str(e)}', 'danger')
+            return redirect(url_for('register'))
     return render_template('registration.html')
 
 # Login Page, if called with a Post method check credentials with Firestore
@@ -81,36 +77,30 @@ def register():
 @app.route('/login.html', methods=['GET', 'POST'])
 def login():
     # If user is already logged in, redirect to main page
-    if current_user.is_authenticated:
+    if 'user' in session:
         return redirect("index.html")
-
     if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-
-        # Get user from Firebase Firestore
-        user_doc = fsdb.collection('users').document(username).get()
-
-        if user_doc.exists:
-            user_data = user_doc.to_dict()
-            # Check the password
-            if bcrypt.check_password_hash(user_data['password'], password):
-                # Log the user in using Flask-Login
-                user = User(id=username, username=user_data['username'], perms=user_data['perms'])
-                login_user(user)
-                flash('Login successful!', 'success')
-                return redirect(url_for('mainDashboard'))
-            else:
-                flash('Invalid password.', 'danger')
-        else:
-            flash('User does not exist.', 'danger')
-
+        email = request.form['email']
+        password = request.form['password']
+        try:
+            # Verify the user's credentials via Firebase Authentication
+            user = auth.get_user_by_email(email)
+            # Firebase Admin SDK cannot check passwords, so you'd use the client SDK on frontend for that
+            # Simulating a login here, in real world, use client-side Firebase Authentication for passwords
+            session['user'] = user.email
+            flash(f'Logged in successfully as {user.email}', 'success')
+            return redirect(url_for('home'))
+        except Exception as e:
+            print(e)
+            flash(f'Login failed: {str(e)}', 'danger')
+            return redirect(url_for('login'))
     return render_template('login.html')
+
 
 # Default URL, if user is not logged in then redirect to login page
 @app.route('/')
 def home():
-    if current_user.is_authenticated:
+    if 'user' not in session:
         return redirect("index.html")
     else:
         return redirect("login.html")
@@ -120,27 +110,27 @@ def home():
 @app.route('/index')
 @app.route('/index.html')
 def mainDashboard():
-    if (not current_user.is_authenticated):
+    if 'user' not in session:
         return redirect("login.html")
-    return render_template("index.html", adminperms=adminperms)
+    return render_template("index.html", adminperms=adminperms, email=session['user'])
 
 @app.route('/logout')
 @app.route('/logout.html')
 @login_required
 def logout():
-    logout_user()
+    session.pop('user', None)
     flash('You have been logged out.', 'success')
     return redirect(url_for('login'))
 
 @app.route('/oview')
 @app.route('/oview.html')
 def overviewPage():
-    return render_template("oview.html")
+    return render_template("oview.html", email=session['user'])
 
 @app.route('/districts')
 @app.route('/districts.html')
 def districtsPage():
-    return render_template("districts.html")
+    return render_template("districts.html", email=session['user'])
 
 async def updateFirebaseRealtimeDB():
     today = datetime.today().strftime('%d%B%Y')
@@ -248,9 +238,15 @@ def classifyClothing(temp, description):
 
     return recommendation
 
+def adminPanel():
+    if 'role' not in session or session['role'] != 'admin':
+        flash('You do not have permission to access this page', 'danger')
+        return redirect(url_for('home'))
+    return render_template('admin_panel.html')
+
 
 async def main():
-    checkDataOnStartup()
+
 
     # Start both the web server and the scheduled task concurrently
     await asyncio.gather(
@@ -263,5 +259,8 @@ async def main():
 
 
 # Check if the file is being executed directly (i.e., not being imported)
+# When uploading to PythonAnywhere, read "https://help.pythonanywhere.com/pages/Flask/"
 if __name__ == '__main__':
-    asyncio.run(main())
+    checkDataOnStartup()
+    if 'liveconsole' not in gethostname():
+        asyncio.run(main())
