@@ -76,6 +76,7 @@ def register():
 @app.route('/login', methods=['GET', 'POST'])
 @app.route('/login.html', methods=['GET', 'POST'])
 def login():
+    global adminperms
     # If user is already logged in, redirect to main page
     if 'user' in session:
         return redirect("index.html")
@@ -85,8 +86,9 @@ def login():
         try:
             # Verify the user's credentials via Firebase Authentication
             user = auth.get_user_by_email(email)
-            # Firebase Admin SDK cannot check passwords, so you'd use the client SDK on frontend for that
-            # Simulating a login here, in real world, use client-side Firebase Authentication for passwords
+            role = user.custom_claims.get('role', 'default')
+            if role == 'admin':
+                adminperms = True
             session['user'] = user.email
             flash(f'Logged in successfully as {user.email}', 'success')
             return redirect(url_for('home'))
@@ -116,9 +118,9 @@ def mainDashboard():
 
 @app.route('/logout')
 @app.route('/logout.html')
-@login_required
 def logout():
     session.pop('user', None)
+    session.pop('role', None)
     flash('You have been logged out.', 'success')
     return redirect(url_for('login'))
 
@@ -246,8 +248,6 @@ def adminPanel():
 
 
 async def main():
-
-
     # Start both the web server and the scheduled task concurrently
     await asyncio.gather(
         runAtMidnight(),  # Firebase update task
@@ -264,3 +264,16 @@ if __name__ == '__main__':
     checkDataOnStartup()
     if 'liveconsole' not in gethostname():
         asyncio.run(main())
+
+# This code is for manually setting an email of a user into an Admin
+'''
+    user_email = "winmarkchan@gmail.com"
+    try:
+        # Get the user by their email
+        user = auth.get_user_by_email(user_email)
+        # Set custom claims (in this case, admin role)
+        auth.set_custom_user_claims(user.uid, {'role': 'admin'})
+        print(f"Admin role assigned to {user_email}")
+    except Exception as e:
+        print(f"Error setting admin role: {str(e)}")
+'''
