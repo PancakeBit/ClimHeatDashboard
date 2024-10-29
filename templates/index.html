@@ -90,7 +90,7 @@
                     </div>
 
                     <!-- Philippine Standard Time Display -->
-                    <div id="pst-time">
+                    <div id="pst-time" class="p-3">
                         <span class="text-dark h6 bg-opacity-75 bg-light small me-1 p-2 ">Philippine Standard Time</span>
                         <span class="text-dark bg-opacity-75 bg-light h4 small me-3 p-2"> <span id="pst-clock"></span> </span>
                     </div>
@@ -123,11 +123,11 @@
                 <div class="card text-body text-end">
                     <div class="card-body p-4">
                         <div class="row">
-                            <!-- Left Column: City, Weather Icon, Weather Description -->
+                            <!-- Left Column: City, Weather Icon, Date -->
                             <div class="col-xl-3 col-md-12 text-center">
                                 <p id="cityName" class="mb-2">City</p>
                                 <img id="weatherIcon" class="img-fluid mb-2" width="150%" /> <!-- Empty src initially -->
-                                <p id="weatherDescription" class="font-weight-bold">Description</p>
+                                <p id="dateDisplay" class="font-weight-bold"></p> <!-- New element for date -->
                             </div>
                             
                             <!-- Center Column: Date/Today -->
@@ -138,12 +138,12 @@
                             <!-- Right Column: Humidity, Temperature, Heat Index -->
                             <div class="col-xl-4 col-md-12 text-center">
                                 <div class="mb-3">
-                                    <p class="mb-1">Humidity</p>
-                                    <h3 id="humidity" class="fw-bold">Humidity</h3>
-                                </div>
-                                <div class="mb-3">
                                     <p class="mb-1">Temperature</p>
                                     <h3 id="weatherTemp" class="fw-bold">Temperature</h3>
+                                </div>
+                                <div class="mb-3">
+                                    <p class="mb-1">Humidity</p>
+                                    <h3 id="humidity" class="fw-bold">Humidity</h3>
                                 </div>
                                 <div class="mb-3">
                                     <p class="mb-1">Heat Index</p>
@@ -154,11 +154,8 @@
                     </div>
                 </div>
             </div>
-            
-            
-            
-            
-            <script>
+
+<script>
 const apiKey = '630c0f7f455572c8c3ef3f3551c5b2ec';
 
 function fetchCurrentWeatherData() {
@@ -204,8 +201,8 @@ function calculateHeatIndex(temp, humidity) {
 // Fetch data on page load
 fetchCurrentWeatherData();
 
-// Function to get the current date and time in the Philippines (GMT+8)
-function updatePhilippineTime() {
+// Function to get the current date in the Philippines (GMT+8)
+function updatePhilippineDateTime() {
     // Options for formatting the date
     const dateOptions = { 
         timeZone: 'Asia/Manila', 
@@ -227,16 +224,16 @@ function updatePhilippineTime() {
     const formattedDate = new Intl.DateTimeFormat('en-US', dateOptions).format(now);
     const formattedTime = new Intl.DateTimeFormat('en-US', timeOptions).format(now);
 
-    // Display the date and time in the PST clock element
-    document.getElementById('pst-clock').textContent = `${formattedTime}  `;
+    // Display the date and time in the respective elements
+    document.getElementById('dateDisplay').textContent = formattedDate;
+    document.getElementById('pst-clock').textContent = formattedTime;
 }
 
-    // Update the time and date every second
-    setInterval(updatePhilippineTime, 1000);
+// Update the time and date every second
+setInterval(updatePhilippineDateTime, 1000);
 
-    // Initialize the date and time immediately
-    updatePhilippineTime();
-    
+// Initialize the date and time immediately
+updatePhilippineDateTime();
 </script>
 
 </body>

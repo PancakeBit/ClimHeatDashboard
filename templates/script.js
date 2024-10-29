@@ -67,18 +67,20 @@ function fetchWeatherData(barangay, apiKey) {
         .catch(error => console.error('Error fetching weather data:', error));
 }
 
+// Function to calculate heat index
 function calculateHeatIndex(temp, humidity) {
-    const T = temp;
-    const R = humidity;
-    const HI = 0.5 * (T + 61.0 + ((T - 68.0) * 1.2) + (R * 0.094));
+    const T = temp * 9 / 5 + 32; // Convert to Fahrenheit
+    const R = humidity; // Humidity remains unchanged
+    let HI = -42.379 + 2.04901523 * T + 10.14333127 * R - 
+             0.22475541 * T * R - 0.00683783 * T * T - 
+             0.05481717 * R * R + 0.00122874 * T * T * R + 
+             0.00085282 * T * R * R - 0.00000199 * T * T * R * R;
 
-    if (HI >= 80) {
-        const HI2 = -42.379 + 2.04901523 * T + 10.14333127 * R - 0.22475541 * T * R - 0.00683783 * T * T - 0.05481717 * R * R + 0.00122874 * T * T * R + 0.00085282 * T * R * R - 0.00000199 * T * T * R * R;
-        return HI2;
-    }
-
-    return HI;
+    HI = (HI - 32) * 5 / 9; // Convert back to Celsius
+    return parseFloat(HI.toFixed(1)); // Return the heat index rounded to one decimal place
 }
+
+
 
 function getHeatIndexInfo(heatIndex) {
     if (heatIndex >= 52) {
@@ -111,18 +113,20 @@ function getHeatIndexInfo(heatIndex) {
 
 function gatherReportData() {
     const weatherDataDiv = document.getElementById('weather-data');
-    const rows = weatherDataDiv.getElementsByClassName('row');
+    const rows = Array.from(weatherDataDiv.getElementsByClassName('row'));
     const data = [];
 
-    Array.from(rows).forEach(row => {
+    rows.slice(1).forEach(row => {
         const cols = row.getElementsByClassName('col');
-        if (cols.length > 0) {
+        
+        // Collect data only if there are exactly 5 columns in the row
+        if (cols.length === 5) {
             data.push({
-                barangay: cols[0].innerText,
-                heatIndex: cols[1].innerText,
-                temperature: cols[2].innerText,
-                classification: cols[3].innerText,
-                description: cols[4].innerText,
+                barangay: cols[0].innerText.trim(),
+                heatIndex: cols[1].innerText.trim(),
+                temperature: cols[2].innerText.trim(),
+                classification: cols[3].innerText.trim(),
+                description: cols[4].innerText.trim()
             });
         }
     });
@@ -133,12 +137,36 @@ function gatherReportData() {
 function generatePDF(data, dateRange) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
+    let yOffset = 20;
+
+    // Set the report title and date range
     doc.text(`Report for ${dateRange}`, 10, 10);
+
+    // Add table headers
+    doc.text("No.", 10, yOffset);
+    doc.text("Barangay", 20, yOffset);
+    doc.text("Heat Index", 60, yOffset);
+    doc.text("Temperature", 100, yOffset);
+    doc.text("Classification", 140, yOffset);
+    doc.text("Description", 180, yOffset);
+
+    yOffset += 10;
+
+    // Loop through the data to populate PDF content
     data.forEach((item, index) => {
-        doc.text(`${index + 1}. ${item.barangay}: ${item.heatIndex}`, 10, 20 + (index * 10));
+        doc.text(`${index + 1}`, 10, yOffset);
+        doc.text(item.barangay, 20, yOffset);
+        doc.text(item.heatIndex, 60, yOffset);
+        doc.text(item.temperature, 100, yOffset);
+        doc.text(item.classification, 140, yOffset);
+        doc.text(item.description, 180, yOffset);
+        yOffset += 10;
     });
+
+    // Save the generated PDF
     doc.save('report.pdf');
 }
+
 
 function generateJSON(data, dateRange) {
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -263,6 +291,51 @@ function updatePhilippineTime() {
         }
     }
 
-    // Initial call to fetch data for each barangay
-    barangays.forEach(barangay => fetchWeatherData(barangay, '630c0f7f455572c8c3ef3f3551c5b2ec'));
+    function updatePagination() {
+        const totalPages = Math.ceil(barangaysData.length / rowsPerPage);
+        document.getElementById('prev-page').classList.toggle('disabled', currentPage === 1);
+        document.getElementById('next-page').classList.toggle('disabled', currentPage === totalPages);
+    
+        // Get pagination links
+        const paginationItems = document.querySelectorAll('.pagination .page-item');
+    
+        // Loop through each pagination item and set the active class
+        paginationItems.forEach((item, index) => {
+            const pageNum = index + 1; // Pagination starts from 1
+            if (pageNum === currentPage) {
+                item.classList.add('active'); // Add active class to current page
+            } else {
+                item.classList.remove('active'); // Remove active class from other pages
+            }
+        });
+    }
+    
+
+// Example function for filtering barangays based on search input
+document.getElementById('searchBar').addEventListener('input', function() {
+    const filter = this.value.toLowerCase();
+    const weatherDataDiv = document.getElementById('weather-data');
+    
+    // Clear the displayed rows and prepare to show filtered results
+    weatherDataDiv.innerHTML = `
+        <div class="col bg-dark text-light">Barangay</div>
+        <div class="col bg-dark text-light">Heat Index</div>
+        <div class="col bg-dark text-light">Temperature</div>
+        <div class="col bg-dark text-light">Effect Based Classification</div>
+        <div class="col bg-dark text-light">Description</div>
+    `;
+
+    // Filter barangays based on the input value
+    barangaysData.forEach(barangay => {
+        if (barangay.name.toLowerCase().includes(filter)) {
+            weatherDataDiv.innerHTML += `
+                <div class="col">${barangay.name}</div>
+                <div class="col">${barangay.heatIndex} °C</div>
+                <div class="col">${barangay.temperature} °C</div>
+                <div class="col">${barangay.classification}</div>
+                <div class="col">${barangay.description}</div>
+            `;
+        }
+    });
+});
     

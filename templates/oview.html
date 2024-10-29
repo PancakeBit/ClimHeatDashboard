@@ -60,12 +60,36 @@
         <nav class="navbar navbar-expand-lg mb-4">
           <div class="container-fluid">
             <div class="d-flex flex-row-reverse align-items-center w-100">
-              <div class="userinfo me-3">
-                <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
-                  <span class="text-gray-600 small">Grpaosidnmoasidn</span>
-                  <img class="img-profile rounded-circle" width="30px" src="../static/images/user.png" />
-                </a>
-              </div>
+              <!-- User Info Modal Trigger -->
+              <div class="userinfo me-3" data-bs-toggle="modal" data-bs-target="#exampleModal" style="cursor: pointer;">
+                <img class="img-profile rounded-circle" width="30px" src="./../backend/static/images/user.png" />
+            </div>
+
+            <!-- Modal -->
+            <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title text-dark" id="exampleModalLabel">Change Password</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body text-center text-dark">
+                            <div class="mb-3 text-start">
+                                <label for="pass1" class="form-label">New Password</label>
+                                <input type="password" id="pass1" name="password" class="form-control" placeholder="**********" required>
+                            </div>
+                            <div class="mb-3 text-start text-dark">
+                                <label for="pass2" class="form-label">Re-Enter Password</label>
+                                <input type="password" id="pass2" name="password" class="form-control" placeholder="**********" required>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <button type="button" class="btn btn-primary">Save changes</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
                 <!-- Philippine Standard Time Display -->
                 <div class="" id="pst-time">
                     <!-- Time will be dynamically updated here -->
