@@ -47,7 +47,7 @@
         }
 
         body {
-            background-image: url(./../static/images/bg.jpg);
+            background-image: url(./../backend/static/images/bg.jpg);
             background-size: cover;
             background-repeat: no-repeat;
         }
@@ -60,26 +60,44 @@
         <nav class="navbar navbar-expand-lg mb-4">
             <div class="container-fluid">
                 <div class="d-flex flex-row-reverse align-items-center w-100">
-                    <!-- User Info -->
-                    <div class="userinfo me-3">
-                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
-                            <span class="text-gray-600 small">{{email}}</span>
-                            <img class="img-profile rounded-circle" width="30px" src="../static/images/user.png" />
-                        </a>
+            <!-- Trigger Modal with User Image -->
+            <div class="userinfo me-3" data-bs-toggle="modal" data-bs-target="#exampleModal" style="cursor: pointer;">
+                <img class="img-profile rounded-circle" width="30px" src="./../backend/static/images/user.png" />
+            </div>
+
+                <!-- Modal -->
+                <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="exampleModalLabel">Change Password</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body text-center">
+                                <div class="mb-3 text-start">
+                                    <label for="pass1" class="form-label">New Password</label>
+                                    <input type="password" id="pass1" name="password" class="form-control" placeholder="**********" required>
+                                </div>
+                                <div class="mb-3 text-start">
+                                    <label for="pass2" class="form-label">Re-Enter Password</label>
+                                    <input type="password" id="pass2" name="password" class="form-control" placeholder="**********" required>
+                                </div>
+                            </div>
+                            
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                <button type="button" class="btn btn-primary">Save changes</button>
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+                                    <!-- Philippine Standard Time Display -->
+                    <div id="pst-time">
+                        <span class="text-dark h6 bg-opacity-75 bg-light small me-1 p-2 ">Philippine Standard Time</span>
+                        <span class="text-dark bg-opacity-75 bg-light h4 small me-3 p-2"> <span id="pst-clock"></span> </span>
                     </div>
 
-                    <!-- Notification -->
-                    <div class="notification me-3">
-                        <svg width="30px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M9.00195 17H5.60636C4.34793 17 3.71872 17 3.58633 16.9023C3.4376 16.7925 3.40126 16.7277 3.38515 16.5436C3.37082 16.3797 3.75646 15.7486 4.52776 14.4866C5.32411 13.1835 6.00031 11.2862 6.00031 8.6C6.00031 7.11479 6.63245 5.69041 7.75766 4.6402C8.88288 3.59 10.409 3 12.0003 3C13.5916 3 15.1177 3.59 16.2429 4.6402C17.3682 5.69041 18.0003 7.11479 18.0003 8.6C18.0003 11.2862 18.6765 13.1835 19.4729 14.4866C20.2441 15.7486 20.6298 16.3797 20.6155 16.5436C20.5994 16.7277 20.563 16.7925 20.4143 16.9023C20.2819 17 19.6527 17 18.3943 17H15.0003M9.00195 17L9.00031 18C9.00031 19.6569 10.3435 21 12.0003 21C13.6572 21 15.0003 19.6569 15.0003 18V17M9.00195 17H15.0003"
-                                stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                        </svg>
-                    </div>
-
-                    <!-- Search Box -->
-                    <div class="search-box me-3">
-                        <input type="text" class="form-control" placeholder="Search..." />
-                    </div>
                 </div>
             </div>
         </nav>
@@ -142,8 +160,23 @@
                         <div class="col bg-dark text-light">Effect Based Classification</div>
                         <div class="col bg-dark text-light">Description</div>
 
+                    
+
                     </div>
-                </div>
+                    <!-- Pagination Controls -->
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination justify-content-center mt-3">
+                            <li class="page-item" id="prev-page">
+                                <a class="page-link" href="#" onclick="changePage(currentPage - 1)">Previous</a>
+                            </li>
+                            <li class="page-item"><a class="page-link" href="#" onclick="changePage(1)">1</a></li>
+                            <li class="page-item"><a class="page-link" href="#" onclick="changePage(2)">2</a></li>
+                            <li class="page-item"><a class="page-link" href="#" onclick="changePage(3)">3</a></li>
+                            <li class="page-item" id="next-page">
+                                <a class="page-link" href="#" onclick="changePage(currentPage + 1)">Next</a>
+                            </li>
+                        </ul>
+                    </nav>
             </div>
         </div>
     </div>

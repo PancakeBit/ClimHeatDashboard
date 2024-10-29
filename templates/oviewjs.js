@@ -117,30 +117,61 @@ function renderWeatherForecast(forecastData) {
   forecastContainer.innerHTML = ''; // Clear any existing content
 
   forecastData.forEach(day => {
-    const date = new Date(day.dt_txt).toLocaleDateString('en-US', { weekday: 'long' });
+    const date = new Date(day.dt_txt).toLocaleDateString('en-US', {   
+      month: 'long',   // e.g., "October"
+      day: 'numeric' 
+    });
     const temp = Math.round(day.main.temp); // Temperature in °C
     const heatIndex = Math.round(day.main.feels_like); // Feels-like temperature
     const icon = day.weather[0].icon; // Weather icon
     const iconUrl = `http://openweathermap.org/img/wn/${icon}@2x.png`; // Icon URL
+  
+    // Set text color conditionally based on heat index value
+    let heatIndexStyle = ''; // Default to empty for inline styles
 
-    // Create a Bootstrap card for each day's forecast
+    if (heatIndex >= 52) {
+      heatIndexStyle = 'color: red;'; // Red for heat index >= 52
+    } else if (heatIndex >= 42 && heatIndex < 52) {
+      heatIndexStyle = 'color: orange;'; // Inline orange color for heat index between 42 and 51
+    } else if (heatIndex >= 33 && heatIndex < 42) {
+      heatIndexStyle = 'color: #FFDB58;'; // Mustard color (#FFDB58) for heat index between 33 and 41
+    } else if (heatIndex >= 27 && heatIndex < 33) {
+      heatIndexStyle = 'color: yellow;'; // Yellow for heat index between 27 and 32
+    } else {
+      heatIndexStyle = 'color: lightgray;'; // Default color for heat index below 27
+    }
+
+    // Use the heatIndexStyle in the HTML
     const cardHtml = `
       <div class="col-md-2">
-        <div class="card text-center" style="width: 100%;">
-          <p class="card-text">${date}</p>
+        <div class="card text-center text-light" style="width: 100%; background: rgba(251, 112, 19,0.3);">
+          <p class="card-text h5 mt-4">${date}</p>
           <img src="${iconUrl}" class="card-img-top" alt="Weather Icon">
           <div class="card-body">
-            <p class="card-text">${temp}°C temp</p>
-            <p class="card-text">${heatIndex}°C Heat Index</p>
+            <p class="card-text h1" style="${heatIndexStyle}">${heatIndex}°C</p>
+            <p class="card-text h6 mb-4">Heat Index</p>
           </div>
         </div>
       </div>
     `;
 
-    // Insert the card into the forecast container
+    // Append the cardHtml to your container
     forecastContainer.innerHTML += cardHtml;
   });
 }
 
 // Fetch weather data on page load
 getWeatherData();
+
+     // Function to get the current time in the Philippines (GMT+8)
+     function updatePhilippineTime() {
+      const options = { timeZone: 'Asia/Manila', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+      const now = new Intl.DateTimeFormat('en-US', options).format(new Date());
+      document.getElementById('pst-clock').textContent = now;
+  }
+
+  // Update the time every second
+  setInterval(updatePhilippineTime, 1000);
+
+  // Initialize the time immediately
+  updatePhilippineTime();

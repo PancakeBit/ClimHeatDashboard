@@ -162,3 +162,107 @@ function generateCSV(data, dateRange) {
     link.download = `report_${dateRange}.csv`;
     link.click();
 }
+
+
+// Function to get the current date and time in the Philippines (GMT+8)
+function updatePhilippineTime() {
+    // Options for formatting the date
+    const dateOptions = { 
+        timeZone: 'Asia/Manila', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+    };
+
+    // Options for formatting the time
+    const timeOptions = { 
+        timeZone: 'Asia/Manila', 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        second: '2-digit' 
+    };
+
+    // Get the current date and time in Manila timezone
+    const now = new Date();
+    const formattedDate = new Intl.DateTimeFormat('en-US', dateOptions).format(now);
+    const formattedTime = new Intl.DateTimeFormat('en-US', timeOptions).format(now);
+
+    // Display the date and time in the PST clock element
+    document.getElementById('pst-clock').textContent = `${formattedTime} || ${formattedDate} `;
+}
+
+    // Update the time and date every second
+    setInterval(updatePhilippineTime, 1000);
+
+    // Initialize the date and time immediately
+    updatePhilippineTime();
+
+
+    let currentPage = 1;
+    const rowsPerPage = 4;
+    let barangaysData = []; // To store barangays data with weather info
+
+    // Fetch weather data as before
+    function fetchWeatherData(barangay, apiKey) {
+        const apiUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${barangay.lat}&lon=${barangay.lon}&appid=${apiKey}&units=metric`;
+
+        fetch(apiUrl)
+            .then(response => response.json())
+            .then(data => {
+                barangaysData.push({
+                    name: barangay.name,
+                    heatIndex: calculateHeatIndex(data.main.temp, data.main.humidity).toFixed(2),
+                    temperature: data.main.temp.toFixed(2),
+                    classification: getHeatIndexInfo(calculateHeatIndex(data.main.temp, data.main.humidity)).classification,
+                    description: getHeatIndexInfo(calculateHeatIndex(data.main.temp, data.main.humidity)).description
+                });
+                displayCurrentPage();
+            })
+            .catch(error => console.error('Error fetching weather data:', error));
+    }
+
+    // Display rows based on the current page
+    function displayCurrentPage() {
+        const weatherDataDiv = document.getElementById('weather-data');
+        weatherDataDiv.innerHTML = `
+            <div class="col bg-dark text-light">Barangay</div>
+            <div class="col bg-dark text-light">Heat Index</div>
+            <div class="col bg-dark text-light">Temperature</div>
+            <div class="col bg-dark text-light">Effect Based Classification</div>
+            <div class="col bg-dark text-light">Description</div>
+        `;
+
+        const start = (currentPage - 1) * rowsPerPage;
+        const end = start + rowsPerPage;
+        const currentBarangays = barangaysData.slice(start, end);
+
+        currentBarangays.forEach(barangay => {
+            weatherDataDiv.innerHTML += `
+                <div class="col">${barangay.name}</div>
+                <div class="col">${barangay.heatIndex} °C</div>
+                <div class="col">${barangay.temperature} °C</div>
+                <div class="col">${barangay.classification}</div>
+                <div class="col">${barangay.description}</div>
+            `;
+        });
+
+        updatePagination();
+    }
+
+    function updatePagination() {
+        const totalPages = Math.ceil(barangaysData.length / rowsPerPage);
+        document.getElementById('prev-page').classList.toggle('disabled', currentPage === 1);
+        document.getElementById('next-page').classList.toggle('disabled', currentPage === totalPages);
+    }
+
+    function changePage(newPage) {
+        const totalPages = Math.ceil(barangaysData.length / rowsPerPage);
+        if (newPage >= 1 && newPage <= totalPages) {
+            currentPage = newPage;
+            displayCurrentPage();
+        }
+    }
+
+    // Initial call to fetch data for each barangay
+    barangays.forEach(barangay => fetchWeatherData(barangay, '630c0f7f455572c8c3ef3f3551c5b2ec'));
+    
