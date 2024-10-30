@@ -6,6 +6,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <meta charset="utf-8">
+    <script type="module" src="./static/js/App.js" defer></script>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         .col {
@@ -39,14 +40,15 @@
             color: black;
         }
 
+
         body {
-            background-image: url('./../backend/static/images/bg.jpg');
+            background-image: url('./../static/images/bg.jpg');
             background-size: cover;
             background-repeat: no-repeat;
         }
 
         .main-content {
-            margin-left: 220px;
+            margin-left: 15%;
             padding: 20px;
         }
     </style>
@@ -60,7 +62,7 @@
                 <div class="d-flex flex-row-reverse align-items-center w-100">
                     <!-- User Info Modal Trigger -->
                     <div class="userinfo me-3" data-bs-toggle="modal" data-bs-target="#exampleModal" style="cursor: pointer;">
-                        <img class="img-profile rounded-circle" width="30px" src="./../backend/static/images/user.png" />
+                        <img class="img-profile rounded-circle" width="30px" src="./static/images/user.png" />
                     </div>
 
                     <!-- Modal -->
@@ -102,9 +104,9 @@
     <!-- Sidebar -->
     <div class="sidebar">
         <h1 class="text-light text-center">ClimHeat</h1>
-        <a href="#" class="list-group-item list-group-item-action text-light m-2 p-2">Home</a>
-        <a href="#" class="list-group-item list-group-item-action text-light m-2 p-2">Overview</a>
-        <a href="#" class="list-group-item list-group-item-action text-light ms-3 m-2">Districts</a>
+        <a href="{{url_for('mainDashboard')}}" class="list-group-item list-group-item-action text-light m-2 p-2">Home</a>
+        <a href="{{url_for('overviewPage')}}" class="list-group-item list-group-item-action text-light m-2 p-2">Overview</a>
+        <a href="{{url_for('districtsPage')}}" class="list-group-item list-group-item-action text-light ms-3 m-2">Districts</a>
         <a href="#" class="list-group-item list-group-item-action text-light ms-5">Risk Analysis</a>
         <div class="mt-auto">
             <button class="btn btn-danger w-100 mt-5">Logout</button>
@@ -113,10 +115,11 @@
 
     <!-- Main Content -->
     <div class="main-content">
+        <main class="mx-5">
         <div class="row">
             <!-- Advisories Section -->
             <div class="col-xl-6">
-                <img src="./../backend/static/images/heatdex.png" class="img-fluid w-100 p-2" alt="Effect-based Classification">
+                <img src="./static/images/heatdex.png" class="img-fluid w-100 p-2" alt="Effect-based Classification">
             </div>
 
             <div class="col-xl-8 col-md-12 col-sm-12 w-50">
@@ -129,21 +132,17 @@
                                 <img id="weatherIcon" class="img-fluid mb-2" width="150%" /> <!-- Empty src initially -->
                                 <p id="dateDisplay" class=""></dp> <!-- New element for date -->
                             </div>
-                            
+
                             <!-- Center Column: Date/Today -->
                             <div class="col-xl-5 col-md-12 my-auto text-center">
                                 <h2 class="fw-bold">Today</h2>
                             </div>
-                            
+
                             <!-- Right Column: Humidity, Temperature, Heat Index -->
                             <div class="col-xl-4 col-md-12 text-center">
                                 <div class="mb-3">
                                     <p class="mb-1">Temperature</p>
                                     <h3 id="weatherTemp" class="fw-bold">Temperature</h3>
-                                </div>
-                                <div class="mb-3">
-                                    <p class="mb-1">Humidity</p>
-                                    <h3 id="humidity" class="fw-bold">Humidity</h3>
                                 </div>
                                 <div class="mb-3">
                                     <p class="mb-1">Heat Index</p>
@@ -154,8 +153,34 @@
                     </div>
                 </div>
             </div>
+        </div>
 
-<script>
+            <!--Bar Chart-->
+            <div class="row card mt-3 align-items-center">
+            <div class="col-xl-9 p-2 chart-area" style="height: 50vh">
+              <div class="chartjs-size-monitor">
+                <div class="chartjs-size-monitor-expand">
+                  <div class="">
+
+                  </div>
+                </div>
+                <div class="chartjs-size-monitor-shrink">
+                  <div class="">
+
+                  </div></div></div>
+                                        <canvas id="barchart" class="chartjs-render-monitor"></canvas>
+                                    </div>
+            <!--Bar Chart End-->
+        </div>
+        </main>
+    </div>
+        <script
+        src="../static/js/Chart.min.js"
+      ></script>
+
+
+
+            <script>
 const apiKey = '630c0f7f455572c8c3ef3f3551c5b2ec';
 
 function fetchCurrentWeatherData() {
@@ -174,6 +199,7 @@ function fetchCurrentWeatherData() {
             document.getElementById("weatherTemp").textContent = temperature + "°C";
             document.getElementById("humidity").textContent = humidity + "%";
             document.getElementById("heatIndex").textContent = heatIndex.toFixed(2) + "°C";
+            document.getElementById("weatherDescription").textContent = data.weather['0'].description;
 
             // Set the weather icon
             const icon = data.weather[0].icon;
@@ -189,12 +215,12 @@ function calculateHeatIndex(temp, humidity) {
     let HI = 0.5 * (T + 61.0 + ((T - 68.0) * 1.2) + (R * 0.094));
 
     if (HI >= 80) {
-        HI = -42.379 + 2.04901523 * T + 10.14333127 * R 
-            - 0.22475541 * T * R - 0.00683783 * T * T 
-            - 0.05481717 * R * R + 0.00122874 * T * T * R 
+        HI = -42.379 + 2.04901523 * T + 10.14333127 * R
+            - 0.22475541 * T * R - 0.00683783 * T * T
+            - 0.05481717 * R * R + 0.00122874 * T * T * R
             + 0.00085282 * T * R * R - 0.00000199 * T * T * R * R;
     }
-    
+
     return HI;
 }
 
@@ -204,19 +230,19 @@ fetchCurrentWeatherData();
 // Function to get the current date in the Philippines (GMT+8)
 function updatePhilippineDateTime() {
     // Options for formatting the date
-    const dateOptions = { 
-        timeZone: 'Asia/Manila', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
+    const dateOptions = {
+        timeZone: 'Asia/Manila',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
     };
 
     // Options for formatting the time
-    const timeOptions = { 
-        timeZone: 'Asia/Manila', 
-        hour: '2-digit', 
-        minute: '2-digit', 
-        second: '2-digit' 
+    const timeOptions = {
+        timeZone: 'Asia/Manila',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
     };
 
     // Get the current date and time in Manila timezone

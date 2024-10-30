@@ -12,7 +12,7 @@ const district6Barangays = [
   { name: "Culiat", lat: 14.6572, lng: 121.0483 },
   { name: "Matandang Balara", lat: 14.6711, lng: 121.1008 }
 ];
-
+console.log("aaaa");
 // Function to calculate heat index
 function calculateHeatIndex(temperature, humidity) {
   const t = temperature * 9/5 + 32; // Convert to Fahrenheit

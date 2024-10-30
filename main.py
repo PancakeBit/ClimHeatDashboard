@@ -6,7 +6,7 @@ from socket import gethostname
 import requests
 import asyncio
 from datetime import datetime, timedelta
-from flask import Flask, render_template, redirect, url_for, request, flash, session
+from flask import Flask, render_template, redirect, url_for, request, flash, session, send_from_directory
 from firebase_admin import credentials, firestore, db, auth
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, login_user, login_required, logout_user, UserMixin, current_user
@@ -16,6 +16,8 @@ from flask_jwt_extended import JWTManager, create_access_token
 
 # Create a Flask application instance
 app = Flask(__name__)
+
+
 # TODO: SET ACTUAL SECRET KEY AS A RANDOMLY GENERATED STRING
 app.config['SECRET_KEY'] = secrets.token_urlsafe(16)
 login_manager = LoginManager(app)
@@ -81,17 +83,31 @@ def login():
     if 'user' in session:
         return redirect("index.html")
     if request.method == 'POST':
+        FIREBASE_API_KEY = "AIzaSyA9E2A3a5Vtv01QmZHVqccuPIAX6sPnJXc"
+        firebase_url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={FIREBASE_API_KEY}"
         email = request.form['email']
         password = request.form['password']
         try:
+            payload = {
+                "email": email,
+                "password": password,
+                "returnSecureToken": True
+            }
+            response = requests.post(firebase_url, json=payload)
+            result = response.json()
             # Verify the user's credentials via Firebase Authentication
             user = auth.get_user_by_email(email)
             role = user.custom_claims.get('role', 'default')
             if role == 'admin':
                 adminperms = True
-            session['user'] = user.email
-            flash(f'Logged in successfully as {user.email}', 'success')
-            return redirect(url_for('home'))
+            if response.status_code == 200:
+                session['user_id'] = result['localId']
+                session['id_token'] = result['idToken']  # Store the ID token for further authentication
+                session['user'] = user.email
+                flash(f'Logged in successfully as {user.email}', 'success')
+                return redirect(url_for('home'))
+            else:
+                print(response.json())
         except Exception as e:
             print(e)
             flash(f'Login failed: {str(e)}', 'danger')
@@ -104,9 +120,7 @@ def login():
 def home():
     if 'user' not in session:
         return redirect("index.html")
-    else:
-        return redirect("login.html")
-    return render_template("index.html")
+    else:return render_template("index.html")
 
 #Main Home Page, if not authenticated redirect to Login
 @app.route('/index')
@@ -129,10 +143,18 @@ def logout():
 def overviewPage():
     return render_template("oview.html", email=session['user'])
 
+
 @app.route('/districts')
 @app.route('/districts.html')
 def districtsPage():
+    if 'user' not in session:
+        return redirect("login.html")
     return render_template("districts.html", email=session['user'])
+
+@app.route('/<path:path>')
+def static_proxy(path):
+    return send_from_directory(app.static_folder, path)
+
 
 async def updateFirebaseRealtimeDB():
     today = datetime.today().strftime('%d%B%Y')
