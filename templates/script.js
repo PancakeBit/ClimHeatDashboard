@@ -113,26 +113,27 @@ function getHeatIndexInfo(heatIndex) {
 
 function gatherReportData() {
     const weatherDataDiv = document.getElementById('weather-data');
-    const rows = Array.from(weatherDataDiv.getElementsByClassName('row'));
-    const data = [];
+    const cols = Array.from(weatherDataDiv.getElementsByClassName('col')).slice(5); // Skip the header
 
-    rows.slice(1).forEach(row => {
-        const cols = row.getElementsByClassName('col');
-        
-        // Collect data only if there are exactly 5 columns in the row
-        if (cols.length === 5) {
+    const data = [];
+    for (let i = 0; i < cols.length; i += 5) {
+        // Ensure there are enough columns to form a complete data row
+        if (i + 4 < cols.length) {
             data.push({
-                barangay: cols[0].innerText.trim(),
-                heatIndex: cols[1].innerText.trim(),
-                temperature: cols[2].innerText.trim(),
-                classification: cols[3].innerText.trim(),
-                description: cols[4].innerText.trim()
+                barangay: cols[i].innerText.trim(),
+                heatIndex: cols[i + 1].innerText.trim(),
+                temperature: cols[i + 2].innerText.trim(),
+                classification: cols[i + 3].innerText.trim(),
+                description: cols[i + 4].innerText.trim()
             });
         }
-    });
+    }
 
     return data;
 }
+
+
+
 
 function generatePDF(data, dateRange) {
     const { jsPDF } = window.jspdf;
@@ -337,5 +338,6 @@ document.getElementById('searchBar').addEventListener('input', function() {
             `;
         }
     });
+
 });
     
