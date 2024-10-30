@@ -1,10 +1,6 @@
-// App.js
-import React, { useEffect, useState } from 'react';
-import CanvasJSReact from '@canvasjs/react-charts';
 import { db } from './firebase'; // Import Firestore
 import { collection, addDoc, query, where, getDocs, Timestamp, runTransaction, doc } from "firebase/firestore"; // Import Firestore methods
 
-const CanvasJSChart = CanvasJSReact.CanvasJSChart;
 
 async function fetchCurrentWeatherData(setTemperature, setHumidity, setHeatIndex) {
     const apiKey = '630c0f7f455572c8c3ef3f3551c5b2ec';
@@ -122,63 +118,6 @@ async function storeData(city, temperature, humidity, heatIndex) {
     }
 }
 
-function App() {
-    const [dataPoints, setDataPoints] = useState([]);
-    const [city, setCity] = useState('');
-    const [temperature, setTemperature] = useState(0);
-    const [humidity, setHumidity] = useState(0);
-    const [heatIndex, setHeatIndex] = useState(0);
-
-    useEffect(() => {
-        fetchCurrentWeatherData(setTemperature, setHumidity, setHeatIndex);
-        fetchWeatherForecastData(setDataPoints, setCity);
-    }, []);
-
-    useEffect(() => {
-        updateProgressBar('temperature-bar', temperature, `${temperature}°C`);
-        updateProgressBar('humidity-bar', humidity, `${humidity}%`);
-        updateProgressBar('heat-index-bar', heatIndex, `${heatIndex}`);
-    }, [temperature, humidity, heatIndex]);
-
-    useEffect(() => {
-        const interval = setInterval(() => {
-            storeData(city, temperature, humidity, heatIndex);
-        }, 60000); // 1 minute for testing
-
-        return () => clearInterval(interval); // Cleanup interval on component unmount
-    }, [city, temperature, humidity, heatIndex]);
-
-    const options = {
-        animationEnabled: true,
-        exportEnabled: true,
-        theme: "light2",
-        title: {
-            text: `5-Day Temperature Forecast for ${city}`
-        },
-        axisX: {
-            valueFormatString: "DD MMM HH:mm"
-        },
-        axisY: {
-            title: "Temperature (°C)",
-            includeZero: true
-        },
-        data: [{
-            type: "column",
-            indexLabelFontColor: "#5A5757",
-            indexLabelPlacement: "outside",
-            dataPoints: dataPoints
-        }]
-    };
-
-    return (
-        <div>
-            <CanvasJSChart options={options} />
-            <div id="temperature-bar" className="progress-bar" role="progressbar" style={{ width: `${temperature}%` }} aria-valuenow={temperature} aria-valuemin="0" aria-valuemax="100">{}</div>
-            <div id="humidity-bar" className="progress-bar" role="progressbar" style={{ width: `${humidity}%` }} aria-valuenow={humidity} aria-valuemin="0" aria-valuemax="100">{}</div>
-            <div id="heat-index-bar" className="progress-bar" role="progressbar" style={{ width: `${heatIndex}%` }} aria-valuenow={heatIndex} aria-valuemin="0" aria-valuemax="100">{}</div>
-        </div>
-    );
-}
 
 // Function to get the current date and time in the Philippines (GMT+8)
 function updatePhilippineTime() {
@@ -222,7 +161,43 @@ function updatePhilippineTime() {
             var description;
             var humidity;
             var city;
-        }}
+        }
+
+        //get Description for front end text
+    getTemp() {
+        return this.temp + "°C";
+}
+getDesc() {
+    return this.description;
+}
+
+getCity() {
+    return this.city;
+}
+getHumid() {
+    return this.humidity;
+}
+
+//Setters for every function
+setDesc(desc) {
+    this.description = desc;
+}
+setLongit(num) {
+    this.longit = num;
+}
+setLatid(num) {
+    this.latid = num;
+}
+setTemp(num) {
+    this.temp = num;
+}
+setCity(name) {
+    this.city = name;
+}
+setHumid(num) {
+    this.humidity = num;
+}
+}
     var currentWeather = new weatherData();
 
     //Initialize Geolocation and grabbing weather data from OpenWeatherMap
@@ -256,7 +231,8 @@ document.getElementById("cityName").innerHTML = currentWeather.getCity();
 document.getElementById("humidity").innerHTML = currentWeather.getHumid();
 }
 async function getWeather() {
-const getWeatherAPI = `https://api.openweathermap.org/data/2.5/weather?lat=${currentWeather.latid}&lon=${currentWeather.longit}&units=metric&appid=${apikey}`;
+const apiKey = '630c0f7f455572c8c3ef3f3551c5b2ec';
+const getWeatherAPI = `https://api.openweathermap.org/data/2.5/weather?lat=${currentWeather.latid}&lon=${currentWeather.longit}&units=metric&appid=${apiKey}`;
 try {
    const response = await fetch(getWeatherAPI);
    if (!response.ok) {
@@ -277,6 +253,7 @@ try {
  setFrontEndText();
 }
 initGeolocation();
+
 
 
 

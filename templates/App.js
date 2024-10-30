@@ -122,6 +122,12 @@ async function storeData(city, temperature, humidity, heatIndex) {
     }
 }
 
+import React, { useState, useEffect } from 'react';
+import { Chart as ChartJS, BarElement, CategoryScale, LinearScale, Title, Tooltip, Legend } from 'chart.js';
+import { Bar } from 'react-chartjs-2';
+
+ChartJS.register(BarElement, CategoryScale, LinearScale, Title, Tooltip, Legend);
+
 function App() {
     const [dataPoints, setDataPoints] = useState([]);
     const [city, setCity] = useState('');
@@ -148,37 +154,60 @@ function App() {
         return () => clearInterval(interval); // Cleanup interval on component unmount
     }, [city, temperature, humidity, heatIndex]);
 
-    const options = {
-        animationEnabled: true,
-        exportEnabled: true,
-        theme: "light2",
-        title: {
-            text: `5-Day Temperature Forecast for ${city}`
+    const chartData = {
+        labels: dataPoints.map(point => point.label),
+        datasets: [
+            {
+                label: 'Temperature (°C)',
+                data: dataPoints.map(point => point.temperature),
+                backgroundColor: 'rgba(255, 99, 132, 0.5)',
+            },
+            {
+                label: 'Humidity (%)',
+                data: dataPoints.map(point => point.humidity),
+                backgroundColor: 'rgba(54, 162, 235, 0.5)',
+            },
+            {
+                label: 'Heat Index',
+                data: dataPoints.map(point => point.heatIndex),
+                backgroundColor: 'rgba(75, 192, 192, 0.5)',
+            }
+        ]
+    };
+
+    const chartOptions = {
+        plugins: {
+            title: {
+                display: true,
+                text: `5-Day Temperature Forecast for ${city}`
+            },
         },
-        axisX: {
-            valueFormatString: "DD MMM HH:mm"
-        },
-        axisY: {
-            title: "Temperature (°C)",
-            includeZero: true
-        },
-        data: [{
-            type: "column",
-            indexLabelFontColor: "#5A5757",
-            indexLabelPlacement: "outside",
-            dataPoints: dataPoints
-        }]
+        responsive: true,
+        scales: {
+            x: {
+                stacked: true,
+            },
+            y: {
+                stacked: true,
+                title: {
+                    display: true,
+                    text: 'Value'
+                }
+            }
+        }
     };
 
     return (
         <div>
-            <CanvasJSChart options={options} />
+            <Bar data={chartData} options={chartOptions} />
             <div id="temperature-bar" className="progress-bar" role="progressbar" style={{ width: `${temperature}%` }} aria-valuenow={temperature} aria-valuemin="0" aria-valuemax="100">{}</div>
             <div id="humidity-bar" className="progress-bar" role="progressbar" style={{ width: `${humidity}%` }} aria-valuenow={humidity} aria-valuemin="0" aria-valuemax="100">{}</div>
             <div id="heat-index-bar" className="progress-bar" role="progressbar" style={{ width: `${heatIndex}%` }} aria-valuenow={heatIndex} aria-valuemin="0" aria-valuemax="100">{}</div>
         </div>
     );
 }
+
+
 
 // Function to get the current date and time in the Philippines (GMT+8)
 function updatePhilippineTime() {
@@ -222,7 +251,43 @@ function updatePhilippineTime() {
             var description;
             var humidity;
             var city;
-        }}
+        }
+
+        //get Description for front end text
+    getTemp() {
+        return this.temp + "°C";
+}
+getDesc() {
+    return this.description;
+}
+
+getCity() {
+    return this.city;
+}
+getHumid() {
+    return this.humidity;
+}
+
+//Setters for every function
+setDesc(desc) {
+    this.description = desc;
+}
+setLongit(num) {
+    this.longit = num;
+}
+setLatid(num) {
+    this.latid = num;
+}
+setTemp(num) {
+    this.temp = num;
+}
+setCity(name) {
+    this.city = name;
+}
+setHumid(num) {
+    this.humidity = num;
+}
+}
     var currentWeather = new weatherData();
 
     //Initialize Geolocation and grabbing weather data from OpenWeatherMap
@@ -256,7 +321,8 @@ document.getElementById("cityName").innerHTML = currentWeather.getCity();
 document.getElementById("humidity").innerHTML = currentWeather.getHumid();
 }
 async function getWeather() {
-const getWeatherAPI = `https://api.openweathermap.org/data/2.5/weather?lat=${currentWeather.latid}&lon=${currentWeather.longit}&units=metric&appid=${apikey}`;
+const apiKey = '630c0f7f455572c8c3ef3f3551c5b2ec';
+const getWeatherAPI = `https://api.openweathermap.org/data/2.5/weather?lat=${currentWeather.latid}&lon=${currentWeather.longit}&units=metric&appid=${apiKey}`;
 try {
    const response = await fetch(getWeatherAPI);
    if (!response.ok) {
@@ -277,6 +343,7 @@ try {
  setFrontEndText();
 }
 initGeolocation();
+
 
 
 
