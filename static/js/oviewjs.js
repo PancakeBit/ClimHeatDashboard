@@ -12,7 +12,7 @@ const district6Barangays = [
   { name: "Culiat", lat: 14.6572, lng: 121.0483 },
   { name: "Matandang Balara", lat: 14.6711, lng: 121.1008 }
 ];
-console.log("aaaa");
+
 // Function to calculate heat index
 function calculateHeatIndex(temperature, humidity) {
   const t = temperature * 9/5 + 32; // Convert to Fahrenheit
@@ -80,10 +80,10 @@ function initMap() {
       const humidity = data.main.humidity;
       const heatIndex = calculateHeatIndex(temp, humidity);
 
-      document.getElementById("weather-description").innerText = `Description: ${description}`;
-      document.getElementById("temperature").innerText = `Temperature: ${temp.toFixed(1)}°C`;
-      document.getElementById("humidity").innerText = `Humidity: ${humidity}%`;
-      document.getElementById("heat-index").innerText = `Heat Index: ${heatIndex}°C`;
+      //document.getElementById("weather-description").innerText = `Description: ${description}`;
+      //document.getElementById("temperature").innerText = `Temperature: ${temp.toFixed(1)}°C`;
+      //document.getElementById("humidity").innerText = `Humidity: ${humidity}%`;
+      //document.getElementById("heat-index").innerText = `Heat Index: ${heatIndex}°C`;
     })
     .catch(error => console.error('Error fetching weather data:', error));
 }
@@ -162,16 +162,3 @@ function renderWeatherForecast(forecastData) {
 
 // Fetch weather data on page load
 getWeatherData();
-
-     // Function to get the current time in the Philippines (GMT+8)
-     function updatePhilippineTime() {
-      const options = { timeZone: 'Asia/Manila', hour: '2-digit', minute: '2-digit', second: '2-digit' };
-      const now = new Intl.DateTimeFormat('en-US', options).format(new Date());
-      document.getElementById('pst-clock').textContent = now;
-  }
-
-  // Update the time every second
-  setInterval(updatePhilippineTime, 1000);
-
-  // Initialize the time immediately
-  updatePhilippineTime();

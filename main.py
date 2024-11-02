@@ -141,6 +141,8 @@ def logout():
 @app.route('/oview')
 @app.route('/oview.html')
 def overviewPage():
+    if 'user' not in session:
+        return redirect("login.html")
     return render_template("oview.html", email=session['user'])
 
 
@@ -271,10 +273,15 @@ def adminPanel():
 
 async def main():
     # Start both the web server and the scheduled task concurrently
-    await asyncio.gather(
-        runAtMidnight(),  # Firebase update task
-        asyncio.to_thread(app.run)  # Flask server running in a separate thread
-    )
+    if 'liveconsole' not in gethostname():
+        await asyncio.gather(
+            runAtMidnight(),  # Firebase update task
+            asyncio.to_thread(app.run)  # Flask server running in a separate thread
+        )
+    else:
+        await asyncio.gather(
+            runAtMidnight(),  # Firebase update task
+        )
 
 # If any functions need to be ran before the server starts, place them here
 
@@ -284,8 +291,7 @@ async def main():
 # When uploading to PythonAnywhere, read "https://help.pythonanywhere.com/pages/Flask/"
 if __name__ == '__main__':
     checkDataOnStartup()
-    if 'liveconsole' not in gethostname():
-        asyncio.run(main())
+    asyncio.run(main())
 
 # This code is for manually setting an email of a user into an Admin
 '''

@@ -24,6 +24,18 @@ async function fetchCurrentWeatherData(setTemperature, setHumidity, setHeatIndex
     }
 }
 
+function calculateHeatIndex(temp, humidity) {
+    const T = temp * 9 / 5 + 32; // Convert to Fahrenheit
+    const R = humidity; // Humidity remains unchanged
+    let HI = -42.379 + 2.04901523 * T + 10.14333127 * R -
+             0.22475541 * T * R - 0.00683783 * T * T -
+             0.05481717 * R * R + 0.00122874 * T * T * R +
+             0.00085282 * T * R * R - 0.00000199 * T * T * R * R;
+
+    HI = (HI - 32) * 5 / 9; // Convert back to Celsius
+    return parseFloat(HI.toFixed(1)); // Return the heat index rounded to one decimal place
+}
+
 async function fetchWeatherForecastData() {
     const apiKey = '630c0f7f455572c8c3ef3f3551c5b2ec';
     const city = 'Quezon City';
@@ -43,7 +55,30 @@ async function fetchWeatherForecastData() {
         }
 
         console.log('Weather forecast data:', daily_data);
-        const tempList = Object.values(daily_data).map(entry => entry.main.feels_like)
+        const tempList = Object.values(daily_data).map(entry => calculateHeatIndex(entry.main.temp, entry.main.humidity))
+        let colorList = [];
+        for(key in tempList) {
+            let tempvalue = tempList[key];
+            console.log(tempvalue);
+                if (tempvalue < 27.00) {
+                    colorList.push("#999999");
+                    }
+                else if (tempvalue > 27.00 && tempvalue < 32.00) {
+                    colorList.push("#ffff00");
+                    }
+                else if (tempvalue > 32.00 && tempvalue < 41.00) {
+                    colorList.push('#F3BA0A');
+                    }
+                else if (tempvalue > 41.00 && tempvalue < 42.00) {
+                    colorList.push('#f3890a');
+                    }
+                else if (tempvalue > 42.00 && tempvalue < 52.00) {
+                    colorList.push("#F37716");
+                    }
+                else if (tempvalue > 52) {
+                    colorList.push("#EF580B");
+                    }
+        }
 
         //------------------------------------------------------------CHART CODE STARTS HERE-----------------------------------------------------------------//
          var myPieChart = new Chart(ctx, {
@@ -52,7 +87,7 @@ async function fetchWeatherForecastData() {
             labels: Object.keys(daily_data),
             datasets: [{
               data: tempList,
-              backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc', '#4e73df', '#4e73df', '#4e73df', '#4e73df', '#4e73df'],
+              backgroundColor: colorList,
               hoverBackgroundColor: ['#2e59d9', '#17a673', '#2c9faf'],
               hoverBorderColor: "rgba(234, 236, 244, 1)",
             }],
@@ -93,22 +128,6 @@ async function fetchWeatherForecastData() {
     } catch (error) {
         console.error('Error fetching weather forecast data:', error);
     }
-}
-
-function calculateHeatIndex(temp, humidity) {
-    const T = temp;
-    const R = humidity;
-    const HI = parseFloat((0.5 * (T + 61.0 + ((T - 68.0) * 1.2) + (R * 0.094))).toFixed(2));
-
-    if (HI >= 80) {
-        const HI2 = -42.379 + 2.04901523 * T + 10.14333127 * R - 0.22475541 * T * R
-                    - 0.00683783 * T * T - 0.05481717 * R * R
-                    + 0.00122874 * T * T * R + 0.00085282 * T * R * R
-                    - 0.00000199 * T * T * R * R;
-        return HI2;
-    }
-
-    return HI;
 }
 
 function updateProgressBar(id, value, text) {
