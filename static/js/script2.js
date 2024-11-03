@@ -1,13 +1,3 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
-import { getDatabase, ref, set, onValue, get } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
-
-const appsettings = {
-  databaseURL: "https://climheat-5f408-default-rtdb.asia-southeast1.firebasedatabase.app/"
-}
-const app = initializeApp(appsettings);
-const database = getDatabase(app);
-const weatherdata = ref(database, "Barangay List/"+day+month+year);
-
 document.addEventListener('DOMContentLoaded', () => {
     const apiKey = '630c0f7f455572c8c3ef3f3551c5b2ec'; // Replace with your OpenWeather API key
 
@@ -49,30 +39,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const modal = bootstrap.Modal.getInstance(document.getElementById('reportModal'));
         modal.hide();
     });
-
-    // Same event listener for REPORTS FROM DATABASE
-    document.getElementById('generateDBReport').addEventListener('click', () => {
-        const dateRange = document.getElementById('dateRange').value;
-        const fileType = document.getElementById('fileType').value;
-
-        // Gather the data to be included in the report
-        const reportData = gatherReportData();
-
-        if (fileType === 'pdf') {
-            generatePDF(reportData, dateRange);
-        } else if (fileType === 'json') {
-            generateJSON(reportData, dateRange);
-        } else if (fileType === 'csv') {
-            generateCSV(reportData, dateRange);
-        }
-
-        // Close the modal after generating the report
-        const modal = bootstrap.Modal.getInstance(document.getElementById('reportModal'));
-        modal.hide();
-    });
 });
 
-function fetchWeatherData(barangay, apiKey) {
+function DEFUNCTfetchWeatherData(barangay, apiKey) {
     const apiUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${barangay.lat}&lon=${barangay.lon}&appid=${apiKey}&units=metric`;
 
     fetch(apiUrl)
@@ -102,9 +71,9 @@ function fetchWeatherData(barangay, apiKey) {
 function calculateHeatIndex(temp, humidity) {
     const T = temp * 9 / 5 + 32; // Convert to Fahrenheit
     const R = humidity; // Humidity remains unchanged
-    let HI = -42.379 + 2.04901523 * T + 10.14333127 * R - 
-             0.22475541 * T * R - 0.00683783 * T * T - 
-             0.05481717 * R * R + 0.00122874 * T * T * R + 
+    let HI = -42.379 + 2.04901523 * T + 10.14333127 * R -
+             0.22475541 * T * R - 0.00683783 * T * T -
+             0.05481717 * R * R + 0.00122874 * T * T * R +
              0.00085282 * T * R * R - 0.00000199 * T * T * R * R;
 
     HI = (HI - 32) * 5 / 9; // Convert back to Celsius
@@ -144,72 +113,54 @@ function getHeatIndexInfo(heatIndex) {
 
 function gatherReportData() {
     const weatherDataDiv = document.getElementById('weather-data');
-    const cols = Array.from(weatherDataDiv.getElementsByClassName('col')).slice(5); // Skip the header
-
+    const rows = Array.from(weatherDataDiv.getElementsByClassName('row'));
     const data = [];
-    for (let i = 0; i < cols.length; i += 5) {
-        // Ensure there are enough columns to form a complete data row
-        if (i + 4 < cols.length) {
+
+    rows.slice(1).forEach(row => {
+        const cols = row.getElementsByClassName('col');
+
+        // Collect data only if there are exactly 5 columns in the row
+        if (cols.length === 5) {
             data.push({
-                barangay: cols[i].innerText.trim(),
-                heatIndex: cols[i + 1].innerText.trim(),
-                temperature: cols[i + 2].innerText.trim(),
-                classification: cols[i + 3].innerText.trim(),
-                description: cols[i + 4].innerText.trim()
+                barangay: cols[0].innerText.trim(),
+                heatIndex: cols[1].innerText.trim(),
+                temperature: cols[2].innerText.trim(),
+                classification: cols[3].innerText.trim(),
+                description: cols[4].innerText.trim()
             });
         }
-    }
+    });
 
     return data;
 }
 
-
-
-
 function generatePDF(data, dateRange) {
     const { jsPDF } = window.jspdf;
-    const doc = new jsPDF('landscape'); // Set orientation to landscape
+    const doc = new jsPDF();
     let yOffset = 20;
 
     // Set the report title and date range
-    doc.text(`${dateRange.toUpperCase()} REPORT`, 10, 10);
+    doc.text(`Report for ${dateRange}`, 10, 10);
 
     // Add table headers
-    doc.text("Barangay", 10, yOffset);
-    doc.text("Heat Index", 70, yOffset);
-    doc.text("Temperature", 110, yOffset);
-    doc.text("Classification", 150, yOffset);
-    doc.text("Description", 190, yOffset);
+    doc.text("No.", 10, yOffset);
+    doc.text("Barangay", 20, yOffset);
+    doc.text("Heat Index", 60, yOffset);
+    doc.text("Temperature", 100, yOffset);
+    doc.text("Classification", 140, yOffset);
+    doc.text("Description", 180, yOffset);
 
     yOffset += 10;
 
-    // Set maximum width for wrapping text
-    const maxClassificationWidth = 35;
-    const maxDescriptionWidth = 80;
-
     // Loop through the data to populate PDF content
-    data.forEach((item) => {
-        doc.text(item.barangay, 10, yOffset);
-        doc.text(item.heatIndex, 70, yOffset);
-        doc.text(item.temperature, 110, yOffset);
-
-        // Wrap the classification and description text within specified widths
-        const classificationText = doc.splitTextToSize(item.classification, maxClassificationWidth);
-        const descriptionText = doc.splitTextToSize(item.description, maxDescriptionWidth);
-
-        // Print classification and description, accounting for wrapped text height
-        doc.text(classificationText, 150, yOffset);
-        doc.text(descriptionText, 190, yOffset);
-
-        // Determine the maximum height required for this row based on wrapped text
-        const rowHeight = Math.max(classificationText.length, descriptionText.length) * 10;
-        yOffset += rowHeight;
-
-        // Add a new page if yOffset exceeds the page height
-        if (yOffset > doc.internal.pageSize.height - 20) {
-            doc.addPage();
-            yOffset = 20; // Reset yOffset for the new page
-        }
+    data.forEach((item, index) => {
+        doc.text(`${index + 1}`, 10, yOffset);
+        doc.text(item.barangay, 20, yOffset);
+        doc.text(item.heatIndex, 60, yOffset);
+        doc.text(item.temperature, 100, yOffset);
+        doc.text(item.classification, 140, yOffset);
+        doc.text(item.description, 180, yOffset);
+        yOffset += 10;
     });
 
     // Save the generated PDF
@@ -217,27 +168,11 @@ function generatePDF(data, dateRange) {
 }
 
 
-
 function generateJSON(data, dateRange) {
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = `report_${dateRange}.json`;
-    link.click();
-}
-
-function generateCSV(data, dateRange) {
-    const csvRows = [];
-    csvRows.push(['Barangay', 'Heat Index', 'Temperature', 'Classification', 'Description']); // Header
-
-    data.forEach(item => {
-        csvRows.push([item.barangay, item.heatIndex, item.temperature, item.classification, item.description]);
-    });
-
-    const blob = new Blob([csvRows.map(row => row.join(',')).join('\n')], { type: 'text/csv' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `report_${dateRange}.csv`;
     link.click();
 }
 
@@ -342,7 +277,7 @@ function updatePhilippineTime() {
         updatePagination();
     }
 
-    function updatePagination() {
+    function DEFUNCTupdatePagination() {
         const totalPages = Math.ceil(barangaysData.length / rowsPerPage);
         document.getElementById('prev-page').classList.toggle('disabled', currentPage === 1);
         document.getElementById('next-page').classList.toggle('disabled', currentPage === totalPages);
@@ -375,7 +310,6 @@ function updatePhilippineTime() {
         });
     }
 
-
 // Example function for filtering barangays based on search input
 document.getElementById('searchBar').addEventListener('input', function() {
     const filter = this.value.toLowerCase();
@@ -402,6 +336,4 @@ document.getElementById('searchBar').addEventListener('input', function() {
             `;
         }
     });
-
 });
-    

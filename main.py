@@ -25,7 +25,7 @@ bcrypt = Bcrypt(app)
 jwt = JWTManager(app)
 
 # Initialize Firebase credentials, use absolute path when uploading to Python Anywhere
-cred = credentials.Certificate('static/climheat-key.json')
+cred = credentials.Certificate('/home/pancakebit/Climheat/static/climheat-key.json')
 firebase_admin.initialize_app(cred, {
     'databaseURL': 'https://climheat-5f408-default-rtdb.asia-southeast1.firebasedatabase.app/'
 })

@@ -123,8 +123,10 @@
                                 <input class="form-control" id="searchBar" type="search" placeholder="Search for Barangay" aria-label="Search">
                             </form>
                             <!-- Update the Generate Report Button -->
+                            {% if adminperms == 'True' %}
                             <a class="btn btn-primary" href="#" role="button" data-bs-toggle="modal" data-bs-target="#reportModal">Generate Forecast</a>
                             <a class="btn btn-primary" href="#" role="button" data-bs-toggle="modal" data-bs-target="#forecastModal">Generate Report</a>
+                            {% endif %}
                         </div>
                     </nav>
 
@@ -202,13 +204,13 @@
                     <nav aria-label="Page navigation">
                         <ul class="pagination justify-content-center mt-3">
                             <li class="page-item" id="prev-page">
-                                <a class="page-link" href="#" onclick="changePage(currentPage - 1)">Previous</a>
+                                <a class="page-link" href="#">Previous</a>
                             </li>
-                            <li class="page-item"><a class="page-link" href="#" onclick="changePage(1)">1</a></li>
-                            <li class="page-item"><a class="page-link" href="#" onclick="changePage(2)">2</a></li>
-                            <li class="page-item"><a class="page-link" href="#" onclick="changePage(3)">3</a></li>
+                            <li class="page-item"><a id="page1" class="page-link" href="#">1</a></li>
+                            <li class="page-item"><a id="page2" class="page-link" href="#">2</a></li>
+                            <li class="page-item"><a id="page3" class="page-link" href="#">3</a></li>
                             <li class="page-item" id="next-page">
-                                <a class="page-link" href="#" onclick="changePage(currentPage + 1)">Next</a>
+                                <a class="page-link" href="#">Next</a>
                             </li>
                         </ul>
                     </nav>

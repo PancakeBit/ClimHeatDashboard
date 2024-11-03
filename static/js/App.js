@@ -81,8 +81,8 @@ async function fetchWeatherForecastData() {
         }
 
         //------------------------------------------------------------CHART CODE STARTS HERE-----------------------------------------------------------------//
-         var myPieChart = new Chart(ctx, {
-          type: 'bar',
+         var LineChart = new Chart(ctx, {
+          type: 'line',
           data: {
             labels: Object.keys(daily_data),
             datasets: [{
@@ -90,6 +90,10 @@ async function fetchWeatherForecastData() {
               backgroundColor: colorList,
               hoverBackgroundColor: ['#2e59d9', '#17a673', '#2c9faf'],
               hoverBorderColor: "rgba(234, 236, 244, 1)",
+              fill: false,
+              pointStyle: 'circle',
+              pointRadius: 10,
+              pointHoverRadius: 15,
             }],
           },
           options: {
@@ -114,8 +118,8 @@ async function fetchWeatherForecastData() {
               scales: {
                     yAxes: [{
                         ticks: {
-                            beginAtZero: true,
-                            max: 40,
+                            beginAtZero: false,
+                            max: 50,
                         }
                     }]
                 },

@@ -110,7 +110,7 @@
         <a href="{{url_for('districtsPage')}}" class="list-group-item list-group-item-action text-light ms-3 m-2">Districts</a>
         <a href="#" class="list-group-item list-group-item-action text-light ms-5">Risk Analysis</a>
         <div class="mt-auto">
-            <button class="btn btn-danger w-100 mt-5">Logout</button>
+            <button href="{{url_for('logout')}}" class="btn btn-danger w-100 mt-5">Logout</button>
         </div>
     </div>
 
@@ -129,14 +129,14 @@
                         <div class="row">
                             <!-- Left Column: City, Weather Icon, Date -->
                             <div class="col-xl-3 col-md-12 text-center">
-                                <p id="cityName" class="mb-2 h4">City</p>
+                                <p id="cityName" class="mb-2">City</p>
                                 <img id="weatherIcon" class="img-fluid mb-2" width="150%" /> <!-- Empty src initially -->
-                                <p id="dateDisplay" class=""></dp> <!-- New element for date -->
+                                <p id="dateDisplay" class="font-weight-bold"></p> <!-- New element for date -->
                             </div>
 
                             <!-- Center Column: Date/Today -->
                             <div class="col-xl-5 col-md-12 my-auto text-center">
-                                <h2 class="fw-bold">Today</h2>
+                                <h3 class="fw-bold">Today</h3>
                             </div>
 
                             <!-- Right Column: Humidity, Temperature, Heat Index -->
@@ -144,6 +144,10 @@
                                 <div class="mb-3">
                                     <p class="mb-1">Temperature</p>
                                     <h3 id="weatherTemp" class="fw-bold">Temperature</h3>
+                                </div>
+                                <div class="mb-3">
+                                    <p class="mb-1">Humidity</p>
+                                    <h3 id="humidity" class="fw-bold">Humidity</h3>
                                 </div>
                                 <div class="mb-3">
                                     <p class="mb-1">Heat Index</p>
@@ -198,9 +202,9 @@ function fetchCurrentWeatherData() {
             // Update elements with weather data
             document.getElementById("cityName").textContent = data.name;
             document.getElementById("weatherTemp").textContent = temperature + "°C";
-            //document.getElementById("humidity").textContent = humidity + "%";
+            document.getElementById("humidity").textContent = humidity + "%";
             document.getElementById("heatIndex").textContent = heatIndex.toFixed(2) + "°C";
-            document.getElementById("weatherDescription").textContent = data.weather['0'].description;
+            // document.getElementById("weatherDescription").textContent = data.weather['0'].description;
 
             // Set the weather icon
             const icon = data.weather[0].icon;
