@@ -33,7 +33,7 @@
             top: 0;
             left: 0;
             height: 150%;
-            width: 200px;
+            width: 15%;
             background: rgba(251, 112, 19, 0.1);
             padding: 2px;
             box-shadow:
@@ -102,15 +102,14 @@
 
         <!-- Sidebar and Main Content -->
         <div class="row">
-            <!-- Sidebar -->
-            <div class="sidebar" style="width: 15%;">
+            <div class="sidebar">
                 <h1 class="text-light text-center">ClimHeat</h1>
                 <a href="{{url_for('mainDashboard')}}" class="list-group-item list-group-item-action text-light m-2 p-2">Home</a>
                 <a href="{{url_for('overviewPage')}}" class="list-group-item list-group-item-action text-light m-2 p-2">Overview</a>
-                <a href="{{url_for('mainDashboard')}}" class="list-group-item list-group-item-action text-light m-2 p-2">Risk Analysis</a>
-                <a href="{{url_for('districtsPage')}}" class="list-group-item list-group-item-action text-light m-2 p-2">Districts</a>
+                <a href="{{url_for('districtsPage')}}" class="list-group-item list-group-item-action text-light ms-3 m-2">Districts</a>
+                <a href="#" class="list-group-item list-group-item-action text-light ms-5">Risk Analysis</a>
                 <div class="mt-auto">
-                    <button class="btn btn-danger w-100 mt-5">Logout</button>
+                    <button href="{{url_for('logout')}}" class="btn btn-danger w-100 mt-5">Logout</button>
                 </div>
             </div>
 
