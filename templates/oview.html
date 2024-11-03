@@ -43,15 +43,17 @@
     </head>
 
     <body>
-      <!-- Sidebar -->
-      <div class="sidebar">
-        <h1 class="text-center text-light">ClimHeat</h1>
-        <a href="{{url_for('mainDashboard')}}">Home</a>
-        <a href="{{url_for('overviewPage')}}">Overview</a>
-        <a href="#">Risk Analysis</a>
-        <a href="{{url_for('districtsPage')}}">Districts</a>
-        <button class="btn btn-danger w-100 mt-5">Logout</button>
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <h1 class="text-light text-center">ClimHeat</h1>
+      <a href="{{url_for('mainDashboard')}}" class="list-group-item list-group-item-action text-light m-2 p-2">Home</a>
+      <a href="{{url_for('overviewPage')}}" class="list-group-item list-group-item-action text-light m-2 p-2">Overview</a>
+      <a href="{{url_for('districtsPage')}}" class="list-group-item list-group-item-action text-light ms-3 m-2">Districts</a>
+      <a href="#" class="list-group-item list-group-item-action text-light ms-5">Risk Analysis</a>
+      <div class="mt-auto">
+          <button class="btn btn-danger w-100 mt-5">Logout</button>
       </div>
+  </div>
 
       <!-- Main content -->
       <div class="main-content">
