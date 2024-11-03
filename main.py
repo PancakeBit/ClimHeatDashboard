@@ -25,7 +25,8 @@ bcrypt = Bcrypt(app)
 jwt = JWTManager(app)
 
 # Initialize Firebase credentials, use absolute path when uploading to Python Anywhere
-cred = credentials.Certificate('/home/pancakebit/Climheat/static/climheat-key.json')
+# When uploaded to pythoinanywhere, change to "/home/pancakebit/Climheat/static/climheat-key.json"
+cred = credentials.Certificate('static/climheat-key.json')
 firebase_admin.initialize_app(cred, {
     'databaseURL': 'https://climheat-5f408-default-rtdb.asia-southeast1.firebasedatabase.app/'
 })
@@ -151,7 +152,7 @@ def overviewPage():
 def districtsPage():
     if 'user' not in session:
         return redirect("login.html")
-    return render_template("districts.html", email=session['user'])
+    return render_template("districts.html", adminperms=adminperms, email=session['user'])
 
 @app.route('/<path:path>')
 def static_proxy(path):
