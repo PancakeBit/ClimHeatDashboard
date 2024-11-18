@@ -7,7 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <meta charset="utf-8">
-    <script type="module" src="./../static/js/App.js" defer></script>
+    <script src="./../static/js/App.js" defer></script>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         .col {
@@ -63,7 +63,7 @@
                 <div class="d-flex flex-row-reverse align-items-center w-100">
                     <!-- User Info Modal Trigger -->
                     <div class="userinfo me-3" data-bs-toggle="modal" data-bs-target="#exampleModal" style="cursor: pointer;">
-                        <img class="img-profile rounded-circle" width="30px" src="./static/images/user.png" />
+                        <img class="img-profile rounded-circle" width="30px" src="./../static/images/user.png" />
                     </div>
 
                     <!-- Modal -->
@@ -93,7 +93,7 @@
                     </div>
 
                     <!-- Philippine Standard Time Display -->
-                    <div id="pst-time" class="p-3">
+                    <div id="pst-time" class="p-4">
                         <span class="text-dark h6 bg-opacity-75 bg-light small me-1 p-2 ">Philippine Standard Time</span>
                         <span class="text-dark bg-opacity-75 bg-light h4 small me-3 p-2"> <span id="pst-clock"></span> </span>
                     </div>
@@ -214,20 +214,28 @@ function fetchCurrentWeatherData() {
         .catch(error => console.error('Error:', error));
 }
 
-function calculateHeatIndex(temp, humidity) {
-    const T = temp;
-    const R = humidity;
-    let HI = 0.5 * (T + 61.0 + ((T - 68.0) * 1.2) + (R * 0.094));
-
-    if (HI >= 80) {
-        HI = -42.379 + 2.04901523 * T + 10.14333127 * R
-            - 0.22475541 * T * R - 0.00683783 * T * T
-            - 0.05481717 * R * R + 0.00122874 * T * T * R
-            + 0.00085282 * T * R * R - 0.00000199 * T * T * R * R;
+function calculateHeatIndex(temperatureCelsius, relativeHumidity) {
+    const temperatureFahrenheit = temperatureCelsius * 9 / 5 + 32; // Convert Celsius to Fahrenheit
+    const humidity = relativeHumidity; // Relative humidity remains unchanged
+    
+    // Initial simplified heat index calculation
+    let heatIndexFahrenheit = 0.5 * (temperatureFahrenheit + 61.0 + ((temperatureFahrenheit - 68.0) * 1.2) + (humidity * 0.094));
+    
+    // Apply the more complex formula if the initial index is 80°F or above
+    if (heatIndexFahrenheit >= 80) {
+        heatIndexFahrenheit = -42.379 + 2.04901523 * temperatureFahrenheit 
+                            + 10.14333127 * humidity - 0.22475541 * temperatureFahrenheit * humidity 
+                            - 0.00683783 * temperatureFahrenheit ** 2 - 0.05481717 * humidity ** 2 
+                            + 0.00122874 * temperatureFahrenheit ** 2 * humidity 
+                            + 0.00085282 * temperatureFahrenheit * humidity ** 2 
+                            - 0.00000199 * temperatureFahrenheit ** 2 * humidity ** 2;
     }
-
-    return HI;
+    
+    // Convert the heat index back to Celsius and round to one decimal place
+    const heatIndexCelsius = (heatIndexFahrenheit - 32) * 5 / 9;
+    return parseFloat(heatIndexCelsius.toFixed(1));
 }
+
 
 // Fetch data on page load
 fetchCurrentWeatherData();

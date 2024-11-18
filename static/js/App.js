@@ -108,12 +108,12 @@ async function fetchWeatherForecastData() {
               caretPadding: 10,
             },
             legend: {
-              display: false
+              display: false,
             },
             cutoutPercentage: 20,
             title: {
                 display: true,
-                text: '5 Day Temperature Forecast in Celcius'
+                text: '5-Day Heat Index History'
               },
               scales: {
                     yAxes: [{
@@ -212,7 +212,7 @@ function updatePhilippineTime() {
     const formattedTime = new Intl.DateTimeFormat('en-US', timeOptions).format(now);
 
     // Display the date and time in the PST clock element
-    document.getElementById('pst-clock').textContent = `${formattedTime} || ${formattedDate} `;
+    document.getElementById('pst-clock').textContent = `${formattedTime} `;
 }
 
     // Update the time and date every second
