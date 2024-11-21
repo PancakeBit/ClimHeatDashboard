@@ -9,7 +9,7 @@
         <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
     <meta charset="utf-8">
-    <script type="module" src="./../static/js/App.js" defer></script>
+    <script src="./../static/js/App.js" defer></script>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         .col {
@@ -65,7 +65,7 @@
                 <div class="d-flex flex-row-reverse align-items-center w-100">
                     <!-- User Info Modal Trigger -->
                     <div class="userinfo me-3" data-bs-toggle="modal" data-bs-target="#exampleModal" style="cursor: pointer;">
-                        <img class="img-profile rounded-circle" width="30px" src="./static/images/user.png" />
+                        <img class="img-profile rounded-circle" width="30px" src="./../static/images/user.png" />
                     </div>
 
                     <!-- Modal -->
@@ -95,7 +95,7 @@
                     </div>
 
                     <!-- Philippine Standard Time Display -->
-                    <div id="pst-time" class="p-3">
+                    <div id="pst-time" class="p-4">
                         <span class="text-dark h6 bg-opacity-75 bg-light small me-1 p-2 ">Philippine Standard Time</span>
                         <span class="text-dark bg-opacity-75 bg-light h4 small me-3 p-2"> <span id="pst-clock"></span> </span>
                     </div>

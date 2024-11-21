@@ -22,20 +22,39 @@ function calculateHeatIndex(temperature, humidity) {
   return hi.toFixed(1);
 }
 
+
+let map; // Global map variable
+let searchMarker = null; // Variable to store the search marker
+
 // Google Maps initialization
 function initMap() {
   const quezonCity = { lat: 14.6760, lng: 121.0437 };
-  const map = new google.maps.Map(document.getElementById("map"), {
+  map = new google.maps.Map(document.getElementById("map"), {
     zoom: 12,
     center: quezonCity,
   });
+
+  // Define cooling spots
+  const coolingSpots = [
+    { lat: 14.7013, lng: 121.0747, name: "La Mesa Eco Park", description: "A large nature park with shaded areas, trees, and water features—ideal for cooling down." },
+    { lat: 14.6507, lng: 121.0480, name: "Quezon Memorial Circle", description: "A major park with shaded walkways, gardens, and ponds, providing a cooler environment." },
+    { lat: 14.7301, lng: 121.0613, name: "SM City Fairview", description: "A large shopping mall with air-conditioned areas, offering refuge from the heat." },
+    { lat: 14.7281, lng: 121.0599, name: "Ayala Malls Fairview Terraces", description: "Another major shopping center with ample shaded and indoor cooling areas." },
+    { lat: 14.7314, lng: 121.0738, name: "Lagro Covered Court", description: "A covered court providing a shaded space for recreation and rest." },
+    { lat: 14.7053, lng: 121.0594, name: "Novaliches District Hospital", description: "The hospital can serve as an emergency cooling center during heat waves." },
+    { lat: 14.7297, lng: 121.0776, name: "Amparo Nature Park", description: "A green, shaded area with benches and walking paths." },
+    { lat: 14.7243, lng: 121.0615, name: "North Fairview Subdivision Park", description: "A community park with shaded areas for relaxation." },
+    { lat: 14.6954, lng: 121.0978, name: "Batasan Hills National High School Grounds", description: "School grounds with shaded and open areas, available for use during emergencies." },
+    { lat: 14.6756, lng: 121.0574, name: "Commonwealth Market Area", description: "Near various shaded market areas and structures." }
+  ];
+  
 
   // Add markers for each barangay
   district6Barangays.forEach(barangay => {
     const marker = new google.maps.Marker({
       position: { lat: barangay.lat, lng: barangay.lng },
       map: map,
-      title: barangay.name
+      title: barangay.name,
     });
 
     const infoWindow = new google.maps.InfoWindow();
@@ -72,21 +91,111 @@ function initMap() {
     });
   });
 
-  fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${quezonCity.lat}&lon=${quezonCity.lng}&units=metric&appid=630c0f7f455572c8c3ef3f3551c5b2ec`)
-    .then(response => response.json())
-    .then(data => {
-      const description = data.weather[0].description;
-      const temp = data.main.temp;
-      const humidity = data.main.humidity;
-      const heatIndex = calculateHeatIndex(temp, humidity);
+  // Add markers for each cooling spot
+  // Adding cooling spot markers with specific descriptions
+  coolingSpots.forEach(spot => {
+    const marker = new google.maps.Marker({
+      position: { lat: spot.lat, lng: spot.lng },
+      map: map,
+      title: spot.name,
+      icon: {
+        url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png" // Custom icon for cooling spots
+      }
+    });
 
-      //document.getElementById("weather-description").innerText = `Description: ${description}`;
-      //document.getElementById("temperature").innerText = `Temperature: ${temp.toFixed(1)}°C`;
-      //document.getElementById("humidity").innerText = `Humidity: ${humidity}%`;
-      //document.getElementById("heat-index").innerText = `Heat Index: ${heatIndex}°C`;
-    })
-    .catch(error => console.error('Error fetching weather data:', error));
+    const infoWindow = new google.maps.InfoWindow({
+      content: `<div><strong>${spot.name}</strong><br>${spot.description}</div>`
+    });
+
+    // Add hover event listeners for cooling spots
+    marker.addListener('mouseover', () => {
+      infoWindow.open(map, marker);
+    });
+
+    marker.addListener('mouseout', () => {
+      infoWindow.close();
+    });
+  });
 }
+
+// Search for a specific location
+function searchLocation() {
+  const searchQuery = document.getElementById("location-search").value.trim();
+  
+  // If search is empty, clear the marker and exit
+  if (!searchQuery) {
+    if (searchMarker) {
+      searchMarker.setMap(null); // Remove the marker from the map
+      searchMarker = null;       // Clear the marker reference
+    }
+    return;
+  }
+
+  const geocoder = new google.maps.Geocoder();
+
+  // Geocode the search query
+  geocoder.geocode({ address: searchQuery }, (results, status) => {
+    if (status === "OK" && results[0]) {
+      const location = results[0].geometry.location;
+
+      // Clear any previous search marker
+      if (searchMarker) {
+        searchMarker.setMap(null);
+      }
+
+      // Add a new marker for the searched location
+      searchMarker = new google.maps.Marker({
+        map: map,
+        position: location,
+        title: searchQuery,
+      });
+
+      // Center the map on the searched location
+      map.setCenter(location);
+
+      // Fetch weather data for the searched location
+      fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${location.lat()}&lon=${location.lng()}&units=metric&appid=630c0f7f455572c8c3ef3f3551c5b2ec`)
+        .then(response => response.json())
+        .then(data => {
+          const temp = data.main.temp;
+          const humidity = data.main.humidity;
+          const heatIndex = calculateHeatIndex(temp, humidity);
+          
+          const infoWindow = new google.maps.InfoWindow({
+            content: `
+              <div>
+                <strong>${searchQuery}</strong><br>
+                Temperature: ${temp.toFixed(1)}°C<br>
+                Humidity: ${humidity}%<br>
+                Heat Index: ${heatIndex}°C
+              </div>
+            `
+          });
+
+          // Show info window on hover
+          searchMarker.addListener("mouseover", () => {
+            infoWindow.open(map, searchMarker);
+          });
+          searchMarker.addListener("mouseout", () => {
+            infoWindow.close();
+          });
+        })
+        .catch(error => {
+          console.error("Error fetching weather data:", error);
+        });
+    } else {
+      alert("Geocode was not successful for the following reason: " + status);
+    }
+  });
+}
+
+// Example heat index calculation function (add your own if needed)
+function calculateHeatIndex(temp, humidity) {
+  return (temp + humidity) / 2;
+}
+
+
+
 
 // Initialize the map once the page is loaded
 window.onload = initMap;

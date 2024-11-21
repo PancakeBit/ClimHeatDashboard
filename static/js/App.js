@@ -205,7 +205,7 @@ async function fetchWeatherForecastData() {
                 }
             },
             legend: {
-              display: false
+              display: false,
             },
             cutoutPercentage: 20,
             title: {
@@ -310,7 +310,7 @@ function updatePhilippineTime() {
 
     document.getElementById('dateDisplay').textContent = formattedDate;
     // Display the date and time in the PST clock element
-    document.getElementById('pst-clock').textContent = `${formattedTime} || ${formattedDate} `;
+    document.getElementById('pst-clock').textContent = `${formattedTime} `;
 }
 
     // Update the time and date every second
