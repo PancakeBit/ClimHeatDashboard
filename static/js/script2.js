@@ -19,16 +19,15 @@ document.addEventListener('DOMContentLoaded', () => {
         fetchWeatherData(barangay, apiKey);
     });
 
-    // Event listener for report generation
     document.getElementById('generateReport').addEventListener('click', () => {
-        const dateRange = document.getElementById('dateRange').value;
+        const dateRange = document.getElementById('dateRange').value || "No Date Range Provided";
         const fileType = document.getElementById('fileType').value;
 
         // Gather the data to be included in the report
         const reportData = gatherReportData();
 
         if (fileType === 'pdf') {
-            generatePDF(reportData, dateRange);
+            generatePDF(dateRange); // Pass the checked dateRange to generatePDF
         } else if (fileType === 'json') {
             generateJSON(reportData, dateRange);
         } else if (fileType === 'csv') {
@@ -39,47 +38,255 @@ document.addEventListener('DOMContentLoaded', () => {
         const modal = bootstrap.Modal.getInstance(document.getElementById('reportModal'));
         modal.hide();
     });
+
+    // Fetch weather data
+    function defunctfetchWeatherData(barangay, apiKey) {
+        const apiUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${barangay.lat}&lon=${barangay.lon}&appid=${apiKey}&units=metric`;
+
+        fetch(apiUrl)
+            .then(response => response.json())
+            .then(data => {
+                const temperature = data.main.temp;
+                const humidity = data.main.humidity;
+                const heatIndex = calculateHeatIndex(temperature, humidity);
+                const { classification, description } = getHeatIndexInfo(heatIndex);
+
+                var weatherDataDiv = document.getElementById('weather-data');
+                weatherDataDiv.innerHTML += `
+                    <div class="col">${barangay.name}</div>
+                    <div class="col">${heatIndex.toFixed(2)} °C</div>
+                    <div class="col">${temperature.toFixed(2)} °C</div>
+                    <div class="col">${classification}</div>
+                    <div class="col">${description}</div>
+                `;
+            })
+            .catch(error => console.error('Error fetching weather data:', error));
+    }
+
+    // Your Firebase configuration
+    var firebaseConfig = {
+        apiKey: "AIzaSyA9E2A3a5Vtv01QmZHVqccuPIAX6sPnJXc",
+        authDomain: "climheat-5f408.firebaseapp.com",
+        projectId: "climheat-5f408",
+        storageBucket: "climheat-5f408.firebasestorage.app",
+        messagingSenderId: "921785500622",
+        appId: "1:921785500622:web:59efedd0bbf5eecbfaa19f"
+    };
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    var db = firebase.firestore();
+
+    async function fetchBPMRecords() {
+        const snapshot = await db.collection('healthData').get();
+        const bpmData = [];
+        snapshot.docs.map(doc => bpmData.push(doc.data()));
+        return bpmData;
+    }
+
+    function identifyAtRiskIndividuals(bpmData) {
+        return bpmData.filter(record => record.heartRate > 50);
+    }
+
+    async function gatherReportData() {
+        const data = [];
+
+        //------------------Important Functions to determine user barangay------------------------------//
+        function hav_formula(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Radius of the Earth in kilometers
+            const toRad = (angle) => angle * (Math.PI / 180); // Convert degrees to radians
+
+            const dLat = toRad(lat2 - lat1);
+            const dLon = toRad(lon2 - lon1);
+            const a = Math.sin(dLat / 2) ** 2 +
+                      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+            return R * c; // Distance in kilometers
+        }
+        function findClosestBarangay(lat, lon) {
+            let closestBarangay = null;
+            let shortestDistance = Infinity;
+
+            barangays.forEach(barangay => {
+                const distance = hav_formula(lat, lon, barangay.lat, barangay.lon);
+                if (distance < shortestDistance) {
+                    shortestDistance = distance;
+                    closestBarangay = barangay.name;
+                }
+            });
+
+            return closestBarangay;
+        }
+        //-----------------------------------------------------//
+
+        // Iterate over all barangay data to collect information across pages
+        barangaysData.forEach(barangay => {
+            data.push({
+                barangay: barangay.name,
+                heatIndex: barangay.heatIndex,
+                temperature: barangay.temperature,
+                classification: barangay.classification,
+                description: barangay.description
+            });
+        });
+
+        // Fetch BPM records and identify at-risk individuals
+        const bpmData = await fetchBPMRecords();
+        const atRiskIndividuals = identifyAtRiskIndividuals(bpmData);
+        data.forEach(item => item.atRiskPeople = 0);
+        // Add at-risk people count to each barangay item
+        atRiskIndividuals.forEach(item => {
+            const name_of_users_barangay = findClosestBarangay(item.latitude, item.longitude);
+            try {
+                const barangayData = data.find(barangay => barangay.barangay == name_of_users_barangay);
+                if (barangayData) {
+                    barangayData.atRiskPeople += 1;
+                }
+            }
+            catch (e) {
+                //Ignore exception because some entries in health data do not have lat and long, those do not count
+            }
+        });
+
+        return data;
+    }
+
+    async function generatePDF(dateRange) {
+        const data = await gatherReportData(); // Fetch data across all pages
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('landscape'); // Set orientation to landscape
+        let yOffset = 20;
+        const pageHeight = doc.internal.pageSize.height;
+        const pageWidth = doc.internal.pageSize.width;
+
+        // Use the single atRiskPeople value directly from data for District 6
+        const NumberOfAtRiskPeople = [];
+        const BarangayLabels = [];
+        data.forEach(barangay => { if(barangay.atRiskPeople != null && barangay.atRiskPeople >0 ) {
+                                        NumberOfAtRiskPeople.push(barangay.atRiskPeople);
+                                        BarangayLabels.push(barangay.barangay);
+                                    }
+                                  });
+        console.log(NumberOfAtRiskPeople);
+        console.log(BarangayLabels);
+        // Set up the report title
+        const reportTitle = (String(dateRange) || "Report").toUpperCase();
+        doc.setFontSize(16);
+        doc.text(`${reportTitle} REPORT`, pageWidth / 2, 10, { align: 'center' });
+        doc.setFontSize(12);
+        yOffset = 20;
+
+        // Function to add headers on each page
+        function addHeaders() {
+            yOffset += 10;
+            doc.setFontSize(10);
+            doc.setTextColor(0, 0, 128); // Dark blue for headers
+            doc.text("Barangay", 10, yOffset);
+            doc.text("Heat Index", 60, yOffset);
+            doc.text("Temperature", 100, yOffset);
+            doc.text("Classification", 140, yOffset);
+            doc.text("Description", 180, yOffset);
+            yOffset += 10;
+            doc.setTextColor(0, 0, 0); // Reset to black for table data
+        }
+
+        addHeaders(); // Add headers on the first page
+
+        // Loop through the data to populate PDF content (excluding at-risk people count in table)
+        data.forEach((item) => {
+            const classificationText = item.classification;
+            const descriptionText = doc.splitTextToSize(item.description, 100); // Limit to 80 units for wrapping
+
+            // Check if adding the current row would exceed page height; add new page if necessary
+            if (yOffset + 10 * descriptionText.length > pageHeight - 20) {
+                doc.addPage();
+                yOffset = 20;
+                addHeaders();
+            }
+
+            // Add text to the PDF, ensuring alignment in each column
+            doc.text(item.barangay, 10, yOffset);
+            doc.text(String(item.heatIndex), 60, yOffset);
+            doc.text(String(item.temperature), 100, yOffset);
+            doc.text(classificationText, 140, yOffset);
+            doc.text(descriptionText, 180, yOffset);
+
+            yOffset += 10 * descriptionText.length;
+        });
+
+        // Create a pie chart with a single slice labeled "District 6" showing the total count of at-risk people
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+
+        new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: BarangayLabels,
+                datasets: [{
+                    label: 'District 6',
+                    data: NumberOfAtRiskPeople,
+                    backgroundColor: ['#FF6384', "#21130d", "#1e81b0", "#eeeee4", "#e28743", "#76b5c5", "#873e23", "#abdbe3", "#1F541B", "#154c79", "#F1688C"]
+                }]
+            },
+            options: {
+                responsive: false,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: true, position: 'bottom' },
+                    title: { display: true, text: 'At-risk People in Quezon City' },
+                    datalabels: { color: '#fff', font: { weight: 'bold' }, formatter: (value) => value }
+                }
+            },
+            plugins: [ChartDataLabels]
+        });
+
+        // Convert chart to image and add it to the PDF
+        setTimeout(() => {
+            const imgData = canvas.toDataURL('image/png');
+
+            // Add chart to the PDF on a new page if no space left
+            if (yOffset + 100 > pageHeight) {
+                doc.addPage();
+                yOffset = 20;
+            }
+
+            doc.addImage(imgData, 'PNG', 10, yOffset, 150, 150); // Position and size the chart
+            doc.save(`Weather_Report_${Date.now()}.pdf`);
+        }, 1000); // Allow time for chart rendering
+    }
+
+
+
+
+
+    function generateCSV(data, dateRange) {
+        const csvContent = [
+            "Barangay,Heat Index,Temperature,Classification,Description,At-risk People",
+            ...data.map(item => `${item.barangay},${item.heatIndex},${item.temperature},${item.classification},${item.description},${item.atRiskPeople}`)
+        ].join("\n");
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Weather_Report_${dateRange || Date.now()}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+
+    function generateJSON(data, dateRange) {
+        const jsonContent = JSON.stringify(data, null, 2);
+        const blob = new Blob([jsonContent], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Weather_Report_${dateRange || Date.now()}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
 });
-
-function DEFUNCTfetchWeatherData(barangay, apiKey) {
-    const apiUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${barangay.lat}&lon=${barangay.lon}&appid=${apiKey}&units=metric`;
-
-    fetch(apiUrl)
-        .then(response => response.json())
-        .then(data => {
-            const temperature = data.main.temp;
-            const humidity = data.main.humidity;
-            const heatIndex = calculateHeatIndex(temperature, humidity);
-            const { classification, description } = getHeatIndexInfo(heatIndex);
-
-            var weatherDataDiv = document.getElementById('weather-data');
-
-            weatherDataDiv.innerHTML += `
-                <div class="col">${barangay.name}</div>
-                <div class="col">${heatIndex.toFixed(2)} °C</div>
-                <div class="col">${temperature.toFixed(2)} °C</div>
-                <div class="col">${classification}</div>
-                <div class="col">${description}</div>
-            `;
-
-            weatherDataDiv.appendChild(barangayDiv);
-        })
-        .catch(error => console.error('Error fetching weather data:', error));
-}
-
-// Function to calculate heat index
-function calculateHeatIndex(temp, humidity) {
-    const T = temp * 9 / 5 + 32; // Convert to Fahrenheit
-    const R = humidity; // Humidity remains unchanged
-    let HI = -42.379 + 2.04901523 * T + 10.14333127 * R -
-             0.22475541 * T * R - 0.00683783 * T * T -
-             0.05481717 * R * R + 0.00122874 * T * T * R +
-             0.00085282 * T * R * R - 0.00000199 * T * T * R * R;
-
-    HI = (HI - 32) * 5 / 9; // Convert back to Celsius
-    return parseFloat(HI.toFixed(1)); // Return the heat index rounded to one decimal place
-}
-
 
 
 function getHeatIndexInfo(heatIndex) {
@@ -111,70 +318,6 @@ function getHeatIndexInfo(heatIndex) {
     }
 }
 
-function gatherReportData() {
-    const weatherDataDiv = document.getElementById('weather-data');
-    const rows = Array.from(weatherDataDiv.getElementsByClassName('row'));
-    const data = [];
-
-    rows.slice(1).forEach(row => {
-        const cols = row.getElementsByClassName('col');
-
-        // Collect data only if there are exactly 5 columns in the row
-        if (cols.length === 5) {
-            data.push({
-                barangay: cols[0].innerText.trim(),
-                heatIndex: cols[1].innerText.trim(),
-                temperature: cols[2].innerText.trim(),
-                classification: cols[3].innerText.trim(),
-                description: cols[4].innerText.trim()
-            });
-        }
-    });
-
-    return data;
-}
-
-function generatePDF(data, dateRange) {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    let yOffset = 20;
-
-    // Set the report title and date range
-    doc.text(`Report for ${dateRange}`, 10, 10);
-
-    // Add table headers
-    doc.text("No.", 10, yOffset);
-    doc.text("Barangay", 20, yOffset);
-    doc.text("Heat Index", 60, yOffset);
-    doc.text("Temperature", 100, yOffset);
-    doc.text("Classification", 140, yOffset);
-    doc.text("Description", 180, yOffset);
-
-    yOffset += 10;
-
-    // Loop through the data to populate PDF content
-    data.forEach((item, index) => {
-        doc.text(`${index + 1}`, 10, yOffset);
-        doc.text(item.barangay, 20, yOffset);
-        doc.text(item.heatIndex, 60, yOffset);
-        doc.text(item.temperature, 100, yOffset);
-        doc.text(item.classification, 140, yOffset);
-        doc.text(item.description, 180, yOffset);
-        yOffset += 10;
-    });
-
-    // Save the generated PDF
-    doc.save('report.pdf');
-}
-
-
-function generateJSON(data, dateRange) {
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `report_${dateRange}.json`;
-    link.click();
-}
 
 function generateCSV(data, dateRange) {
     const csvRows = [];
@@ -189,6 +332,20 @@ function generateCSV(data, dateRange) {
     link.href = URL.createObjectURL(blob);
     link.download = `report_${dateRange}.csv`;
     link.click();
+}
+
+
+    // Function to calculate heat index
+function calculateHeatIndex(temp, humidity) {
+    const T = temp * 9 / 5 + 32; // Convert to Fahrenheit
+    const R = humidity; // Humidity remains unchanged
+    let HI = -42.379 + 2.04901523 * T + 10.14333127 * R -
+             0.22475541 * T * R - 0.00683783 * T * T -
+             0.05481717 * R * R + 0.00122874 * T * T * R +
+             0.00085282 * T * R * R - 0.00000199 * T * T * R * R;
+
+    HI = (HI - 32) * 5 / 9; // Convert back to Celsius
+    return parseFloat(HI.toFixed(1)); // Return the heat index rounded to one decimal place
 }
 
 
@@ -249,73 +406,9 @@ function updatePhilippineTime() {
             .catch(error => console.error('Error fetching weather data:', error));
     }
 
-    // Display rows based on the current page
-    function displayCurrentPage() {
-        const weatherDataDiv = document.getElementById('weather-data');
-        weatherDataDiv.innerHTML = `
-            <div class="col bg-dark text-light">Barangay</div>
-            <div class="col bg-dark text-light">Heat Index</div>
-            <div class="col bg-dark text-light">Temperature</div>
-            <div class="col bg-dark text-light">Effect Based Classification</div>
-            <div class="col bg-dark text-light">Description</div>
-        `;
-
-        const start = (currentPage - 1) * rowsPerPage;
-        const end = start + rowsPerPage;
-        const currentBarangays = barangaysData.slice(start, end);
-
-        currentBarangays.forEach(barangay => {
-            weatherDataDiv.innerHTML += `
-                <div class="col">${barangay.name}</div>
-                <div class="col">${barangay.heatIndex} °C</div>
-                <div class="col">${barangay.temperature} °C</div>
-                <div class="col">${barangay.classification}</div>
-                <div class="col">${barangay.description}</div>
-            `;
-        });
-
-        updatePagination();
-    }
-
-    function DEFUNCTupdatePagination() {
-        const totalPages = Math.ceil(barangaysData.length / rowsPerPage);
-        document.getElementById('prev-page').classList.toggle('disabled', currentPage === 1);
-        document.getElementById('next-page').classList.toggle('disabled', currentPage === totalPages);
-    }
-
-    function changePage(newPage) {
-        const totalPages = Math.ceil(barangaysData.length / rowsPerPage);
-        if (newPage >= 1 && newPage <= totalPages) {
-            currentPage = newPage;
-            displayCurrentPage();
-        }
-    }
-
-    function updatePagination() {
-        const totalPages = Math.ceil(barangaysData.length / rowsPerPage);
-        document.getElementById('prev-page').classList.toggle('disabled', currentPage === 1);
-        document.getElementById('next-page').classList.toggle('disabled', currentPage === totalPages);
-
-        // Get pagination links
-        const paginationItems = document.querySelectorAll('.pagination .page-item');
-
-        // Loop through each pagination item and set the active class
-        paginationItems.forEach((item, index) => {
-            const pageNum = index + 1; // Pagination starts from 1
-            if (pageNum === currentPage) {
-                item.classList.add('active'); // Add active class to current page
-            } else {
-                item.classList.remove('active'); // Remove active class from other pages
-            }
-        });
-    }
-
-// Example function for filtering barangays based on search input
-document.getElementById('searchBar').addEventListener('input', function() {
-    const filter = this.value.toLowerCase();
+ // Display rows based on the current page
+function displayCurrentPage() {
     const weatherDataDiv = document.getElementById('weather-data');
-
-    // Clear the displayed rows and prepare to show filtered results
     weatherDataDiv.innerHTML = `
         <div class="col bg-dark text-light">Barangay</div>
         <div class="col bg-dark text-light">Heat Index</div>
@@ -324,16 +417,138 @@ document.getElementById('searchBar').addEventListener('input', function() {
         <div class="col bg-dark text-light">Description</div>
     `;
 
-    // Filter barangays based on the input value
-    barangaysData.forEach(barangay => {
-        if (barangay.name.toLowerCase().includes(filter)) {
-            weatherDataDiv.innerHTML += `
-                <div class="col">${barangay.name}</div>
-                <div class="col">${barangay.heatIndex} °C</div>
-                <div class="col">${barangay.temperature} °C</div>
-                <div class="col">${barangay.classification}</div>
-                <div class="col">${barangay.description}</div>
-            `;
+    const start = (currentPage - 1) * rowsPerPage;
+    const end = start + rowsPerPage;
+    const currentBarangays = barangaysData.slice(start, end);
+
+    currentBarangays.forEach(barangay => {
+        weatherDataDiv.innerHTML += `
+            <div class="col">${barangay.name}</div>
+            <div class="col">${barangay.heatIndex} °C</div>
+            <div class="col">${barangay.temperature} °C</div>
+            <div class="col">${barangay.classification}</div>
+            <div class="col">${barangay.description}</div>
+        `;
+    });
+
+    updatePagination();
+}
+
+function defunctupdatePagination() {
+    const totalPages = Math.ceil(barangaysData.length / rowsPerPage);
+    document.getElementById('prev-page').classList.toggle('disabled', currentPage === 1);
+    document.getElementById('next-page').classList.toggle('disabled', currentPage === totalPages);
+
+    // Get pagination links
+    const paginationItems = document.querySelectorAll('.pagination .page-item');
+
+    paginationItems.forEach(item => {
+        const pageNum = parseInt(item.getAttribute('data-page'));
+
+        if (pageNum) { // Only apply to actual page numbers, not "Prev" or "Next"
+            if (pageNum === currentPage) {
+                item.classList.add('active'); // Add active class to current page
+            } else {
+                item.classList.remove('active'); // Remove active class from other pages
+            }
         }
     });
+}
+
+
+function defunctchangePage(newPage) {
+    const totalPages = Math.ceil(barangaysData.length / rowsPerPage);
+    if (newPage >= 1 && newPage <= totalPages) {
+        currentPage = newPage;
+        displayCurrentPage();  // Update display
+        updatePagination();     // Update pagination active state
+    }
+}
+
+
+
+
+// Global variable to store filtered results
+let filteredBarangays = [];
+
+// Function to handle search input
+document.getElementById('searchBar').addEventListener('input', function() {
+    const filter = this.value.toLowerCase();
+    const weatherDataDiv = document.getElementById('weather-data');
+
+    // If search bar is empty, reset filteredBarangays to the full dataset
+    if (!filter) {
+        filteredBarangays = barangaysData; // Reset to original data
+        currentPage = 1;                   // Reset to first page
+        displayCurrentPage();
+        return;
+    }
+
+    // Filter barangays based on the input value and store results in filteredBarangays
+    filteredBarangays = barangaysData.filter(barangay =>
+        barangay.name.toLowerCase().includes(filter)
+    );
+
+    // Reset to the first page of filtered results and display
+    currentPage = 1;
+    displayCurrentPage();
 });
+
+// Function to display the current page of either original or filtered data
+function defunctdisplayCurrentPage() {
+    const weatherDataDiv = document.getElementById('weather-data');
+    weatherDataDiv.innerHTML = `
+        <div class="col bg-dark text-light">Barangay</div>
+        <div class="col bg-dark text-light">Heat Index</div>
+        <div class="col bg-dark text-light">Temperature</div>
+        <div class="col bg-dark text-light">Effect Based Classification</div>
+        <div class="col bg-dark text-light">Description</div>
+    `;
+
+    // Use filtered data if it exists, otherwise use full data
+    const dataToDisplay = filteredBarangays.length ? filteredBarangays : barangaysData;
+    const start = (currentPage - 1) * rowsPerPage;
+    const end = start + rowsPerPage;
+    const currentBarangays = dataToDisplay.slice(start, end);
+
+    currentBarangays.forEach(barangay => {
+        weatherDataDiv.innerHTML += `
+            <div class="col">${barangay.name}</div>
+            <div class="col">${barangay.heatIndex} °C</div>
+            <div class="col">${barangay.temperature} °C</div>
+            <div class="col">${barangay.classification}</div>
+            <div class="col">${barangay.description}</div>
+        `;
+    });
+
+    updatePagination(dataToDisplay);
+}
+
+// Updated updatePagination function to use data length dynamically
+function updatePagination(dataToDisplay) {
+    const totalPages = Math.ceil(dataToDisplay.length / rowsPerPage);
+    document.getElementById('prev-page').classList.toggle('disabled', currentPage === 1);
+    document.getElementById('next-page').classList.toggle('disabled', currentPage === totalPages);
+
+    // Get pagination links and update active state
+    const paginationItems = document.querySelectorAll('.pagination .page-item');
+    paginationItems.forEach(item => {
+        const pageNum = parseInt(item.getAttribute('data-page'));
+        if (pageNum) {
+            if (pageNum === currentPage) {
+                item.classList.add('active');
+            } else {
+                item.classList.remove('active');
+            }
+        }
+    });
+}
+
+function changePage(newPage) {
+    const totalPages = Math.ceil((filteredBarangays.length ? filteredBarangays : barangaysData).length / rowsPerPage);
+    if (newPage >= 1 && newPage <= totalPages) {
+        currentPage = newPage;
+        displayCurrentPage();
+    }
+}
+

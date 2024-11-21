@@ -1,5 +1,69 @@
+//Import statements for Firebase
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+import { getDatabase, ref, set, onValue, get } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js";
+
+const appsettings = {
+  databaseURL: "https://climheat-5f408-default-rtdb.asia-southeast1.firebasedatabase.app/"
+}
+
+//Store today's date in a variable
+const today = new Date();
+const day = today.getDate();
+const month = today.toLocaleDateString('default', {month: 'long'});
+const year = today.getFullYear();
+
+const stringToday = day+month+year;
+
+//App settings for Firebase
+const app = initializeApp(appsettings);
+const database = getDatabase(app);
+
+async function getBarangayData(date) {
+        let barangayData = {};
+
+        for (var i = 0; i < date.length; i++) {
+                try {
+                let dbRef = ref(database, `Barangay List/${date[i]}`)
+                const snapshot = await get(dbRef);
+                if (snapshot.exists()) {
+                    barangayData[date[i]] = snapshot.val()
+                } else {
+                    barangayData[date[i]] = "No data available for this date"
+                }
+            } catch (error) {
+                console.error("Error retrieving data:", error);
+                throw error;
+            }
+        }
+        return barangayData;
+}
+
+function getPastFiveDays() {
+    const dateList = [];
+    const months = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+    ];
+
+    // Loop for the past 5 days, including today
+    for (let i = 0; i < 10; i++) {
+        const date = new Date();
+        date.setDate(date.getDate() - i); // Go back by 'i' days
+
+        // Format the date as "DDMonthYYYY"
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = months[date.getMonth()];
+        const year = date.getFullYear();
+
+        const formattedDate = `${day}${month}${year}`;
+        dateList.push(formattedDate);
+    }
+
+    return dateList;
+}
+
+
 // App.js
-console.log("AAAAA");
 
 async function fetchCurrentWeatherData(setTemperature, setHumidity, setHeatIndex) {
     const apiKey = '630c0f7f455572c8c3ef3f3551c5b2ec';
@@ -37,29 +101,44 @@ function calculateHeatIndex(temp, humidity) {
 }
 
 async function fetchWeatherForecastData() {
-    const apiKey = '630c0f7f455572c8c3ef3f3551c5b2ec';
-    const city = 'Quezon City';
-    const url = `https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${apiKey}&units=metric`;
-
+    // Chart Code
     try {
-        console.log('Fetching weather forecast data...');
-        const response = await fetch(url);
-        const data = await response.json();
+        //Get the past few days and return them as a string format for the database
+        const pastDays = getPastFiveDays();
 
-        let daily_data = {};
-        for(var key in data['list']) {
-            const dateStr = data['list'][key]['dt_txt'].split(" ")[0];
-            if (!daily_data[dateStr] || data['list'][key].main.feels_like > daily_data[dateStr].main.feels_like) {
-            daily_data[dateStr] = data['list'][key];
+        let data = await getBarangayData(pastDays)
+        let results = {};
+
+        for (const [date, barangays] of Object.entries(data)) {
+                if (typeof barangays === 'string') {
+                    // Skip days with no data
+                    results[date] = { barangay: "No Data Available for this Date", highestTemp: 0 };
+                    continue;
+                }
+
+                let highestTemp = -Infinity;
+                let hottestBarangay = null;
+
+                for (const [barangay, details] of Object.entries(barangays)) {
+                    if (details.hottest_temp > highestTemp) {
+                        highestTemp = details.hottest_temp;
+                        hottestBarangay = barangay;
+                    }
+                }
+
+                results[date] = {
+                    barangay: hottestBarangay,
+                    highestTemp
+                };
             }
-        }
 
-        console.log('Weather forecast data:', daily_data);
-        const tempList = Object.values(daily_data).map(entry => calculateHeatIndex(entry.main.temp, entry.main.humidity))
+        results = Object.fromEntries(Object.entries(results).reverse());
+        console.log(results);
+
         let colorList = [];
-        for(key in tempList) {
-            let tempvalue = tempList[key];
-            console.log(tempvalue);
+        let tempList = Object.values(results);
+        for(var key in tempList) {
+            let tempvalue = tempList[key]["highestTemp"];
                 if (tempvalue < 27.00) {
                     colorList.push("#999999");
                     }
@@ -78,17 +157,23 @@ async function fetchWeatherForecastData() {
                 else if (tempvalue > 52) {
                     colorList.push("#EF580B");
                     }
+                else {
+                    colorList.push("#505050")
+                }
         }
+
+
 
         //------------------------------------------------------------CHART CODE STARTS HERE-----------------------------------------------------------------//
          var LineChart = new Chart(ctx, {
           type: 'line',
+          labels: ["AAAA"],
           data: {
-            labels: Object.keys(daily_data),
+            tooltipTemplate: "Files",
+            labels: Object.keys(results),
             datasets: [{
-              data: tempList,
+              data: Object.values(results).map(entry => entry.highestTemp),
               backgroundColor: colorList,
-              hoverBackgroundColor: ['#2e59d9', '#17a673', '#2c9faf'],
               hoverBorderColor: "rgba(234, 236, 244, 1)",
               fill: false,
               pointStyle: 'circle',
@@ -99,13 +184,25 @@ async function fetchWeatherForecastData() {
           options: {
             maintainAspectRatio: false,
             tooltips: {
-              backgroundColor: "rgb(225,225,225)",
-              bodyFontColor: "#858796",
+              backgroundColor: "rgb(100,100,100)",
+              bodyFontColor: "#FFFFFF",
               borderColor: '#dddfeb',
               borderWidth: 1,
               xPadding: 15,
               displayColors: true,
               caretPadding: 10,
+              callbacks: {
+                title: function(context) {
+                        // Retrieve date and corresponding entry
+                        const date = context[0].label;
+                        const entry = results[date];
+                        if (entry && entry.highestTemp > 0) {
+                            return `${entry.barangay}`; // Display barangay and temperature
+                        } else {
+                            return 'No Data Available for this Date';
+                        }
+                    }
+                }
             },
             legend: {
               display: false
@@ -113,12 +210,12 @@ async function fetchWeatherForecastData() {
             cutoutPercentage: 20,
             title: {
                 display: true,
-                text: '5 Day Temperature Forecast in Celcius'
+                text: '10 Day Temperature Report in Celcius'
               },
               scales: {
                     yAxes: [{
                         ticks: {
-                            beginAtZero: false,
+                            beginAtZero: true,
                             max: 50,
                         }
                     }]
@@ -211,6 +308,7 @@ function updatePhilippineTime() {
     const formattedDate = new Intl.DateTimeFormat('en-US', dateOptions).format(now);
     const formattedTime = new Intl.DateTimeFormat('en-US', timeOptions).format(now);
 
+    document.getElementById('dateDisplay').textContent = formattedDate;
     // Display the date and time in the PST clock element
     document.getElementById('pst-clock').textContent = `${formattedTime} || ${formattedDate} `;
 }

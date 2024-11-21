@@ -42,6 +42,7 @@ def load_user(user_id):
     global adminperms
     if user_doc.exists:
         user_data = user_doc.to_dict()
+        user_data['perms'] = 'default'
         if user_data['perms'] == 'admin':
             adminperms = True
         return User(user_id, user_data['username'], user_data['perms'])
@@ -98,7 +99,9 @@ def login():
             result = response.json()
             # Verify the user's credentials via Firebase Authentication
             user = auth.get_user_by_email(email)
-            role = user.custom_claims.get('role', 'default')
+            print(response, email)
+            role = user.custom_claims.get('role', 'default') if user.custom_claims else 'default'
+            print(role)
             if role == 'admin':
                 adminperms = True
             if response.status_code == 200:
@@ -110,7 +113,7 @@ def login():
             else:
                 print(response.json())
         except Exception as e:
-            print(e)
+            print("Login Failed: ", e)
             flash(f'Login failed: {str(e)}', 'danger')
             return redirect(url_for('login'))
     return render_template('login.html')
