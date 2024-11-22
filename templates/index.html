@@ -9,7 +9,7 @@
         <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
     <meta charset="utf-8">
-    <script src="./../static/js/App.js" defer></script>
+    <script type="module" src="./../static/js/App.js" defer></script>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         .col {
@@ -138,7 +138,9 @@
                             
                             <!-- Center Column: Date/Today -->
                             <div class="col-xl-5 col-md-12 my-auto text-center">
-                                <h3 class="fw-bold">Today</h3>
+                                <h3 id="heatIndex" class="fw-bold">Heat Index</h3>
+                                <p class="mb-1">Heat Index</p>
+                                <p>Today</p>
                             </div>
                             
                             <!-- Right Column: Humidity, Temperature, Heat Index -->
@@ -152,8 +154,8 @@
                                     <h3 id="humidity" class="fw-bold">Humidity</h3>
                                 </div>
                                 <div class="mb-3">
-                                    <p class="mb-1">Heat Index</p>
-                                    <h3 id="heatIndex" class="fw-bold">Heat Index</h3>
+                                    <p class="mb-1">Air Quality</p>
+                                    <h3 id="airquality" class="fw-bold">Air Quality</h3>
                                 </div>
                             </div>
                         </div>
@@ -193,6 +195,7 @@ const apiKey = '630c0f7f455572c8c3ef3f3551c5b2ec';
 function fetchCurrentWeatherData() {
     const city = 'Quezon City';
     const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`;
+    const air_url = `https://api.openweathermap.org/data/2.5/air_pollution?lat=14.6465&lon=121.0501&appid=${apiKey}`;
 
     fetch(url)
         .then(response => response.json())
@@ -212,6 +215,16 @@ function fetchCurrentWeatherData() {
             const icon = data.weather[0].icon;
             const iconUrl = `http://openweathermap.org/img/wn/${icon}@2x.png`;
             document.getElementById("weatherIcon").src = iconUrl;
+        })
+        .catch(error => console.error('Error:', error));
+
+        fetch(air_url)
+        .then(response => response.json())
+        .then(data => {
+            const query_result = data.list[0].main.aqi;
+            const air_quality_today = ["Good", "Fair", "Moderate", "Poor", "Very Poor"]
+
+            document.getElementById("airquality").textContent = air_quality_today[query_result - 1];
         })
         .catch(error => console.error('Error:', error));
 }

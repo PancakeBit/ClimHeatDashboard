@@ -38,7 +38,7 @@ async function getBarangayData(date) {
         return barangayData;
 }
 
-function getPastFiveDays() {
+function getPastDays() {
     const dateList = [];
     const months = [
         "January", "February", "March", "April", "May", "June",
@@ -104,7 +104,7 @@ async function fetchWeatherForecastData() {
     // Chart Code
     try {
         //Get the past few days and return them as a string format for the database
-        const pastDays = getPastFiveDays();
+        const pastDays = getPastDays();
 
         let data = await getBarangayData(pastDays)
         let results = {};
