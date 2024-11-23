@@ -204,70 +204,126 @@ window.onload = initMap;
 async function getWeatherData() {
   const apiKey = '630c0f7f455572c8c3ef3f3551c5b2ec'; // Replace with your OpenWeather API key
   const city = 'Quezon City'; // Replace with the desired city
-  const apiUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${city}&units=metric&appid=${apiKey}`;
+  const geocodingApi = `https://api.openweathermap.org/geo/1.0/direct?q=${city}&limit=1&appid=${apiKey}`;
 
   try {
-    const response = await fetch(apiUrl);
-    const data = await response.json();
+    // Fetch geolocation coordinates for the city
+    const geoResponse = await fetch(geocodingApi);
+    const geoData = await geoResponse.json();
+    if (!geoData.length) throw new Error('Geocoding failed. City not found.');
+
+    const { lat, lon } = geoData[0];
+    const weatherApiUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${apiKey}`;
+    const airQualityApiUrl = `https://api.openweathermap.org/data/2.5/air_pollution/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}`;
+
+    // Fetch weather and air quality data
+    const [weatherResponse, airQualityResponse] = await Promise.all([
+      fetch(weatherApiUrl),
+      fetch(airQualityApiUrl),
+    ]);
+
+    const weatherData = await weatherResponse.json();
+    const airQualityData = await airQualityResponse.json();
 
     // Filter the forecast data to get 1 forecast per day (e.g., at 12:00 PM)
-    const dailyForecast = data.list.filter(item => item.dt_txt.includes("12:00:00"));
+    const dailyForecast = weatherData.list.filter(item =>
+      item.dt_txt.includes('12:00:00')
+    );
 
-    // Render the forecast data
-    renderWeatherForecast(dailyForecast);
+    renderWeatherForecast(dailyForecast, airQualityData.list);
   } catch (error) {
-    console.error("Error fetching weather data:", error);
+    console.error('Error fetching data:', error);
   }
 }
 
-// Function to render the weather forecast into the HTML
-function renderWeatherForecast(forecastData) {
+// Function to render the weather and air quality forecast into the HTML
+function renderWeatherForecast(forecastData, airQualityData) {
   const forecastContainer = document.getElementById('forecast-container');
   forecastContainer.innerHTML = ''; // Clear any existing content
 
-  forecastData.forEach(day => {
-    const date = new Date(day.dt_txt).toLocaleDateString('en-US', {   
-      month: 'long',   // e.g., "October"
-      day: 'numeric' 
+  forecastData.forEach((day, index) => {
+    const date = new Date(day.dt_txt).toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
     });
-    const temp = Math.round(day.main.temp); // Temperature in °C
-    const heatIndex = Math.round(day.main.feels_like); // Feels-like temperature
-    const icon = day.weather[0].icon; // Weather icon
-    const iconUrl = `http://openweathermap.org/img/wn/${icon}@2x.png`; // Icon URL
-  
-    // Set text color conditionally based on heat index value
-    let heatIndexStyle = ''; // Default to empty for inline styles
+    const temp = Math.round(day.main.temp);
+    const heatIndex = Math.round(day.main.feels_like);
+    const icon = day.weather[0].icon;
+    const iconUrl = `http://openweathermap.org/img/wn/${icon}@2x.png`;
 
-    if (heatIndex >= 52) {
-      heatIndexStyle = 'color: red;'; // Red for heat index >= 52
-    } else if (heatIndex >= 42 && heatIndex < 52) {
-      heatIndexStyle = 'color: orange;'; // Inline orange color for heat index between 42 and 51
-    } else if (heatIndex >= 33 && heatIndex < 42) {
-      heatIndexStyle = 'color: #FFDB58;'; // Mustard color (#FFDB58) for heat index between 33 and 41
-    } else if (heatIndex >= 27 && heatIndex < 33) {
-      heatIndexStyle = 'color: yellow;'; // Yellow for heat index between 27 and 32
-    } else {
-      heatIndexStyle = 'color: lightgray;'; // Default color for heat index below 27
-    }
+    // Air quality data for the same time
+    const airQuality = airQualityData[index];
+    const airQualityIndex = airQuality ? airQuality.main.aqi : 'N/A';
+    const airQualityDescription = getAirQualityDescription(airQualityIndex);
 
-    // Use the heatIndexStyle in the HTML
+    let heatIndexStyle = '';
+    if (heatIndex >= 52) heatIndexStyle = 'color: red;';
+    else if (heatIndex >= 42) heatIndexStyle = 'color: orange;';
+    else if (heatIndex >= 33) heatIndexStyle = 'color: #FFDB58;';
+    else if (heatIndex >= 27) heatIndexStyle = 'color: yellow;';
+    else heatIndexStyle = 'color: lightgray;';
+
     const cardHtml = `
       <div class="col-md-2">
-        <div class="card text-center text-light" style="width: 100%; background: rgba(251, 112, 19,0.3);">
-          <p class="card-text h5 mt-4">${date}</p>
-          <img src="${iconUrl}" class="card-img-top" alt="Weather Icon">
-          <div class="card-body">
-            <p class="card-text h1" style="${heatIndexStyle}">${heatIndex}°C</p>
-            <p class="card-text h6 mb-4">Heat Index</p>
+        <div class="card text-center text-light flip-card" style="width: 100%; background: rgba(251, 112, 19, 0.3);">
+          <div class="flip-card-inner">
+            <!-- Front Side -->
+            <div class="flip-card-front">
+              <p class="card-text h5 mt-4"><i class="fas fa-calendar-day"></i> ${date}</p>
+              <img src="${iconUrl}" class="card-img-top" alt="Weather Icon">
+              <div class="card-body">
+                <p class="card-text h1" style="${heatIndexStyle}">
+                  <i class="fas fa-temperature-high"></i> ${heatIndex}°C
+                </p>
+                <p class="card-text h6 mb-4">Heat Index</p>
+              </div>
+            </div>
+            <!-- Back Side -->
+            <div class="flip-card-back">
+              <div class="card-body">
+                <p class="card-text h5 mt-4"><i class="fas fa-calendar-day"></i> ${date}</p>
+                <p class="card-text h1"><i class="fas fa-wind"></i> ${airQualityIndex}</p>
+                <p class="card-text h6 mb-4">${airQualityDescription}</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     `;
 
-    // Append the cardHtml to your container
     forecastContainer.innerHTML += cardHtml;
+  });
+
+  // Add flipping functionality: Flip all cards when one is clicked
+  const allCards = document.querySelectorAll('.flip-card-inner');
+  allCards.forEach(cardInner => {
+    cardInner.addEventListener('click', () => {
+      // Toggle the 'flipped' class for all cards
+      allCards.forEach(inner => inner.classList.toggle('flipped'));
+    });
   });
 }
 
+// Function to get air quality description based on AQI index
+function getAirQualityDescription(aqi) {
+  switch (aqi) {
+    case 1: return 'Good';
+    case 2: return 'Fair';
+    case 3: return 'Moderate';
+    case 4: return 'Poor';
+    case 5: return 'Very Poor';
+    default: return 'N/A';
+  }
+}
+
+
+
 // Fetch weather data on page load
 getWeatherData();
+
+document.querySelectorAll('.flip-card').forEach(card => {
+  card.addEventListener('click', () => {
+    const inner = card.querySelector('.flip-card-inner');
+    inner.classList.toggle('flipped');
+  });
+});
