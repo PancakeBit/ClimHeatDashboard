@@ -264,7 +264,7 @@ function renderWeatherForecast(forecastData, airQualityData) {
     else heatIndexStyle = 'color: lightgray;';
 
     const cardHtml = `
-      <div class="col-md-2">
+      <div class="col-md-2 card-container">
         <div class="card text-center text-light flip-card" style="width: 100%; background: rgba(251, 112, 19, 0.3);">
           <div class="flip-card-inner">
             <!-- Front Side -->

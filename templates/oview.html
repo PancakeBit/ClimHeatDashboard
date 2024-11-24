@@ -54,8 +54,6 @@
         .map-container {
           margin-top: 20px;
         }
-        
-
 
         .flip-card {
           perspective: 1000px;
@@ -79,19 +77,35 @@
         .flip-card-back {
           backface-visibility: hidden;
           position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
           display: flex;
+          width: 100%;
           flex-direction: column;
           justify-content: center;
           align-items: center;
+          transform-style: preserve-3d;
         }
 
         .flip-card-back {
           transform: rotateY(180deg);
         }
+
+         .card-container {
+          width: 200px;
+          height: 400px;
+          margin-top: -80px;
+          margin-right: 2rem;
+          background: white; /* Background applied here */
+          border-radius: 10px;
+          perspective: 1000px;
+          transition: transform 0.6s;
+        }
+        .flip-card-front, .flip-card-back{
+        color: black;
+        }
+          .card-container-flipped {
+          height: 200px;
+          }
+
 
 
 
