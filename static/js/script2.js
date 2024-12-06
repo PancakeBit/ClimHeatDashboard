@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function identifyAtRiskIndividuals(bpmData) {
-        return bpmData.filter(record => record.heartRate > 50);
+        return bpmData.filter(record => record.heartRate > 90);
     }
 
     async function gatherReportData() {
@@ -167,8 +167,6 @@ document.addEventListener('DOMContentLoaded', () => {
                                         BarangayLabels.push(barangay.barangay);
                                     }
                                   });
-        console.log(NumberOfAtRiskPeople);
-        console.log(BarangayLabels);
         // Set up the report title
         const reportTitle = (String(dateRange) || "Report").toUpperCase();
         doc.setFontSize(16);
@@ -225,7 +223,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 datasets: [{
                     label: 'District 6',
                     data: NumberOfAtRiskPeople,
-                    backgroundColor: ['#FF6384', "#21130d", "#1e81b0", "#eeeee4", "#e28743", "#76b5c5", "#873e23", "#abdbe3", "#1F541B", "#154c79", "#F1688C"]
+                    backgroundColor: [
+                    '#FF6384',
+                    "#21130d",
+                    "#1e81b0",
+                    "#eeeee4",
+                    "#e28743",
+                    "#76b5c5",
+                    "#873e23",
+                    "#abdbe3",
+                    "#1F541B",
+                    "#154c79",
+                    "#F1688C", ]
                 }]
             },
             options: {
@@ -240,17 +249,142 @@ document.addEventListener('DOMContentLoaded', () => {
             plugins: [ChartDataLabels]
         });
 
+    // AIR QUALITY BAR CHART
+        // Create a pie chart with a single slice labeled "District 6" showing the total count of at-risk people
+        const canvas2 = document.createElement('canvas');
+        canvas2.width = 600;
+        canvas2.height = 300;
+        const ctx2 = canvas2.getContext('2d');
+            const barangays = [
+        { name: 'Apolonio Samson', lat: 14.6559, lon: 121.0077 },
+        { name: 'Baesa', lat: 14.6669, lon: 121.0120 },
+        { name: 'Balong Bato', lat: 14.6662, lon: 121.0041 },
+        { name: 'Culiat', lat: 14.6710, lon: 121.0550 },
+        { name: 'New Era', lat: 14.6649, lon: 121.0607 },
+        { name: 'Pasong Tamo', lat: 14.6794, lon: 121.0593 },
+        { name: 'Sangandaan', lat: 14.6739, lon: 121.0177 },
+        { name: 'Sauyo', lat: 14.6951, lon: 121.0493 },
+        { name: 'Talipapa', lat: 14.6855, lon: 121.0263 },
+        { name: 'Tandang Sora', lat: 14.6819, lon: 121.0421 },
+        { name: 'Unang Sigaw', lat: 14.6601, lon: 121.0013 }
+    ];
+
+        let airQualityForEachBarangay = [];
+        let barangay_names = [];
+
+        const promises = barangays.map(barangay => {
+                const air_url = `https://api.openweathermap.org/data/2.5/air_pollution?lat=${barangay.lat}&lon=${barangay.lon}&appid=${apiKey}`;
+                return fetch(air_url)
+                    .then(response => response.json())
+                    .then(data => {
+                        const query_result = data.list[0].main.aqi;
+                        return { name: barangay.name, airQuality: query_result };
+                    });
+            });
+
+            try {
+                const results = await Promise.all(promises);
+                results.forEach(result => {
+                    barangay_names.push(result.name);
+                    airQualityForEachBarangay.push(result.airQuality);
+                });
+        }
+        catch (error) {
+        console.error('Error:', error);
+        }
+
+       // ---------------------------- DATA CUSTOMIZATION FOR CHART STARTS HERE --------------------------------- //
+            const bar_colors = [
+                    '#1eeb3d', // Good - Light Green
+                    '#f2db29', // Fair - Yellow
+                    '#f2aa18', // Moderate - Orange
+                    '#821e05', // Poor - Red
+                    '#d12106' // Very Poor - Bright Red
+                  ]
+            // Air quality levels as string values
+            const airQualityLevels = ['Good', 'Fair', 'Moderate', 'Poor', 'Very Poor'];
+
+            // Convert air quality ratings to corresponding labels
+            const air_quality_background_colors = airQualityForEachBarangay.map(value => bar_colors[value - 1]);
+
+            // Chart.js vertical bar chart
+            new Chart(ctx2, {
+              type: 'bar',
+              data: {
+                labels: barangay_names, // X-axis labels (barangay names)
+                datasets: [{
+                  label: 'Air Quality Rating',
+                  data: airQualityForEachBarangay,
+                  backgroundColor: air_quality_background_colors,
+                  borderWidth: 1
+                }]
+              },
+                options: {
+                        responsive: false, // Turn off responsiveness
+                        maintainAspectRatio: false, // Allow exact width/height settings
+                        scales: {
+                          x: {
+                            title: {
+                              display: true,
+                              text: 'Barangays'
+                            }
+                          },
+                          y: {
+                            title: {
+                              display: true,
+                              text: 'Air Quality Levels'
+                            },
+
+                            ticks: {
+                              callback: function(value, index, values) {
+                                return airQualityLevels[value - 1]; // Map air quality index to string
+                              },
+                              stepSize: 1,
+                            },
+                              labels: ["Good", "Fair", "Moderate", "Poor", "Very Poor"],
+                              min: 0,
+                              max: 5, // Ensure scale matches air quality index range
+                          }
+                        },
+                        plugins: {
+                          legend: {
+                            display: false // Hide legend
+                          },
+                          tooltip: {
+                            callbacks: {
+                              title: function(context) {
+                                return `Barangay: ${context[0].label}`;
+                              },
+                              label: function(context) {
+                                const rating = airQualityLevels[context.raw - 1];
+                                return `Air Quality: ${rating}`;
+                              }
+                            }
+                          }
+                        }
+                      }
+            });
+
         // Convert chart to image and add it to the PDF
         setTimeout(() => {
             const imgData = canvas.toDataURL('image/png');
+
 
             // Add chart to the PDF on a new page if no space left
             if (yOffset + 100 > pageHeight) {
                 doc.addPage();
                 yOffset = 20;
             }
-
             doc.addImage(imgData, 'PNG', 10, yOffset, 150, 150); // Position and size the chart
+            yOffset += 150;
+
+            const airqualimg = canvas2.toDataURL('image/png');
+            if (yOffset + 100 > pageHeight) {
+                doc.addPage();
+                yOffset = 20;
+            }
+            doc.addImage(airqualimg, 'PNG', 10, yOffset, 250, 150);
+
             doc.save(`Weather_Report_${Date.now()}.pdf`);
         }, 1000); // Allow time for chart rendering
     }
