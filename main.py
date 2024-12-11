@@ -130,6 +130,7 @@ def home():
 @app.route('/index')
 @app.route('/index.html')
 def mainDashboard():
+    global adminperms
     if 'user' not in session:
         return redirect("login.html")
     return render_template("index.html", adminperms=adminperms, email=session['user'])

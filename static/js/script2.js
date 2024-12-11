@@ -82,6 +82,50 @@ document.addEventListener('DOMContentLoaded', () => {
         snapshot.docs.map(doc => bpmData.push(doc.data()));
         return bpmData;
     }
+    // Function to convert document ID to a Date object
+        async function fetchHeatData(daterange) {
+            const now = new Date();
+            let dateRange = [];
+
+            // Generate the date range based on the "weekly" or "monthly" option
+            if (daterange === "weekly") {
+                for (let i = 0; i < 7; i++) {
+                    let date = new Date(now);
+                    date.setDate(now.getDate() - i);
+                    dateRange.push(formatDate(date));
+                }
+            } else if (daterange === "monthly") {
+                for (let i = 0; i < 30; i++) {
+                    let date = new Date(now);
+                    date.setDate(now.getDate() - i);
+                    dateRange.push(formatDate(date));
+                }
+            } else {
+                throw new Error("Invalid date range specified. Use 'weekly' or 'monthly'.");
+            }
+
+            // Create an array to hold the results
+            const heatData = [];
+            // Query Firestore for each date in the dateRange
+            for (let date of dateRange) {
+                const snapshot = await db.collection("DailyHeatData").doc(date).get();
+
+                if (snapshot.exists) {
+                    heatData.push(snapshot.data());
+                }
+            }
+
+            return heatData;
+        }
+
+// Function to format the date as "ddMMMMyyyy" (e.g., "01December2024")
+function formatDate(date) {
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = date.toLocaleString("default", { month: "long" });
+    const year = date.getFullYear();
+    return `${month}${day}${year}`;
+}
+
 
     function identifyAtRiskIndividuals(bpmData) {
         return bpmData.filter(record => record.heartRate > 90);
@@ -175,7 +219,7 @@ document.addEventListener('DOMContentLoaded', () => {
         yOffset = 20;
 
         // Function to add headers on each page
-        function addHeaders() {
+        function addDailyHeaders() {
             yOffset += 10;
             doc.setFontSize(10);
             doc.setTextColor(0, 0, 128); // Dark blue for headers
@@ -187,206 +231,614 @@ document.addEventListener('DOMContentLoaded', () => {
             yOffset += 10;
             doc.setTextColor(0, 0, 0); // Reset to black for table data
         }
+        function addWeeklyHeaders() {
+            yOffset += 10;
+            doc.setFontSize(10);
+            doc.setTextColor(0, 0, 128); // Dark blue for headers
+            doc.text("Barangay", 10, yOffset);
+            doc.text("Average Heat Index", 60, yOffset);
+            doc.text("Highest Heat Index", 100, yOffset);
+            doc.text("Classification", 140, yOffset);
+            doc.text("Description", 180, yOffset);
+            yOffset += 10;
+            doc.setTextColor(0, 0, 0); // Reset to black for table data
+        }
+        async function returnAirQualityChart() {
+                // AIR QUALITY BAR CHART
+                    const canvas2 = document.createElement('canvas');
+                    canvas2.width = 600;
+                    canvas2.height = 300;
+                    const ctx2 = canvas2.getContext('2d');
+                        const barangays = [
+                    { name: 'Apolonio Samson', lat: 14.6559, lon: 121.0077 },
+                    { name: 'Baesa', lat: 14.6669, lon: 121.0120 },
+                    { name: 'Balong Bato', lat: 14.6662, lon: 121.0041 },
+                    { name: 'Culiat', lat: 14.6710, lon: 121.0550 },
+                    { name: 'New Era', lat: 14.6649, lon: 121.0607 },
+                    { name: 'Pasong Tamo', lat: 14.6794, lon: 121.0593 },
+                    { name: 'Sangandaan', lat: 14.6739, lon: 121.0177 },
+                    { name: 'Sauyo', lat: 14.6951, lon: 121.0493 },
+                    { name: 'Talipapa', lat: 14.6855, lon: 121.0263 },
+                    { name: 'Tandang Sora', lat: 14.6819, lon: 121.0421 },
+                    { name: 'Unang Sigaw', lat: 14.6601, lon: 121.0013 }
+                ];
 
-        addHeaders(); // Add headers on the first page
+                    let airQualityForEachBarangay = [];
+                    let barangay_names = [];
 
-        // Loop through the data to populate PDF content (excluding at-risk people count in table)
-        data.forEach((item) => {
-            const classificationText = item.classification;
-            const descriptionText = doc.splitTextToSize(item.description, 100); // Limit to 80 units for wrapping
+                    const promises = barangays.map(barangay => {
+                            const air_url = `https://api.openweathermap.org/data/2.5/air_pollution?lat=${barangay.lat}&lon=${barangay.lon}&appid=${apiKey}`;
+                            return fetch(air_url)
+                                .then(response => response.json())
+                                .then(data => {
+                                    const query_result = data.list[0].main.aqi;
+                                    return { name: barangay.name, airQuality: query_result };
+                                });
+                        });
 
-            // Check if adding the current row would exceed page height; add new page if necessary
-            if (yOffset + 10 * descriptionText.length > pageHeight - 20) {
-                doc.addPage();
-                yOffset = 20;
-                addHeaders();
-            }
+                        try {
+                            const results = await Promise.all(promises);
+                            results.forEach(result => {
+                                barangay_names.push(result.name);
+                                airQualityForEachBarangay.push(result.airQuality);
+                            });
+                    }
+                    catch (error) {
+                    console.error('Error:', error);
+                    }
 
-            // Add text to the PDF, ensuring alignment in each column
-            doc.text(item.barangay, 10, yOffset);
-            doc.text(String(item.heatIndex), 60, yOffset);
-            doc.text(String(item.temperature), 100, yOffset);
-            doc.text(classificationText, 140, yOffset);
-            doc.text(descriptionText, 180, yOffset);
+                   // ---------------------------- DATA CUSTOMIZATION FOR CHART STARTS HERE --------------------------------- //
+                        const bar_colors = [
+                                '#1eeb3d', // Good - Light Green
+                                '#f2db29', // Fair - Yellow
+                                '#f2aa18', // Moderate - Orange
+                                '#821e05', // Poor - Red
+                                '#d12106' // Very Poor - Bright Red
+                              ]
+                        // Air quality levels as string values
+                        const airQualityLevels = ['Good', 'Fair', 'Moderate', 'Poor', 'Very Poor'];
 
-            yOffset += 10 * descriptionText.length;
-        });
+                        // Convert air quality ratings to corresponding labels
+                        const air_quality_background_colors = airQualityForEachBarangay.map(value => bar_colors[value - 1]);
 
-        // Create a pie chart with a single slice labeled "District 6" showing the total count of at-risk people
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
+                        // Chart.js vertical bar chart
+                        new Chart(ctx2, {
+                          type: 'bar',
+                          data: {
+                            labels: barangay_names, // X-axis labels (barangay names)
+                            datasets: [{
+                              label: 'Air Quality Rating',
+                              data: airQualityForEachBarangay,
+                              backgroundColor: air_quality_background_colors,
+                              borderWidth: 1
+                            }]
+                          },
+                            options: {
+                                    responsive: false, // Turn off responsiveness
+                                    maintainAspectRatio: false, // Allow exact width/height settings
+                                    scales: {
+                                      x: {
+                                        title: {
+                                          display: true,
+                                          text: 'Barangays'
+                                        }
+                                      },
+                                      y: {
+                                        title: {
+                                          display: true,
+                                          text: 'Air Quality Levels'
+                                        },
 
-        new Chart(ctx, {
-            type: 'pie',
-            data: {
-                labels: BarangayLabels,
-                datasets: [{
-                    label: 'District 6',
-                    data: NumberOfAtRiskPeople,
-                    backgroundColor: [
-                    '#FF6384',
-                    "#21130d",
-                    "#1e81b0",
-                    "#eeeee4",
-                    "#e28743",
-                    "#76b5c5",
-                    "#873e23",
-                    "#abdbe3",
-                    "#1F541B",
-                    "#154c79",
-                    "#F1688C", ]
-                }]
-            },
-            options: {
-                responsive: false,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: true, position: 'bottom' },
-                    title: { display: true, text: 'At-risk People in Quezon City' },
-                    datalabels: { color: '#fff', font: { weight: 'bold' }, formatter: (value) => value }
-                }
-            },
-            plugins: [ChartDataLabels]
-        });
+                                        ticks: {
+                                          callback: function(value, index, values) {
+                                            return airQualityLevels[value - 1]; // Map air quality index to string
+                                          },
+                                          stepSize: 1,
+                                        },
+                                          labels: ["Good", "Fair", "Moderate", "Poor", "Very Poor"],
+                                          min: 0,
+                                          max: 5, // Ensure scale matches air quality index range
+                                      }
+                                    },
+                                    plugins: {
+                                        title: { display: true, text: 'Air Quality of Each Barangay' },
+                                      legend: {
+                                        display: false // Hide legend
+                                      },
+                                      tooltip: {
+                                        callbacks: {
+                                          title: function(context) {
+                                            return `Barangay: ${context[0].label}`;
+                                          },
+                                          label: function(context) {
+                                            const rating = airQualityLevels[context.raw - 1];
+                                            return `Air Quality: ${rating}`;
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                        });
+                return canvas2;
+        }
 
-    // AIR QUALITY BAR CHART
-        // Create a pie chart with a single slice labeled "District 6" showing the total count of at-risk people
-        const canvas2 = document.createElement('canvas');
-        canvas2.width = 600;
-        canvas2.height = 300;
-        const ctx2 = canvas2.getContext('2d');
-            const barangays = [
-        { name: 'Apolonio Samson', lat: 14.6559, lon: 121.0077 },
-        { name: 'Baesa', lat: 14.6669, lon: 121.0120 },
-        { name: 'Balong Bato', lat: 14.6662, lon: 121.0041 },
-        { name: 'Culiat', lat: 14.6710, lon: 121.0550 },
-        { name: 'New Era', lat: 14.6649, lon: 121.0607 },
-        { name: 'Pasong Tamo', lat: 14.6794, lon: 121.0593 },
-        { name: 'Sangandaan', lat: 14.6739, lon: 121.0177 },
-        { name: 'Sauyo', lat: 14.6951, lon: 121.0493 },
-        { name: 'Talipapa', lat: 14.6855, lon: 121.0263 },
-        { name: 'Tandang Sora', lat: 14.6819, lon: 121.0421 },
-        { name: 'Unang Sigaw', lat: 14.6601, lon: 121.0013 }
-    ];
+        // DAILY WEATHER REPORT
+        if(dateRange === 'daily') {        // Loop through the data to populate PDF content (excluding at-risk people count in table)
+        addDailyHeaders(); // Add headers on the first page
+                // For each item in data, write to document
+                data.forEach((item) => {
+                    const classificationText = item.classification;
+                    const descriptionText = doc.splitTextToSize(item.description, 100); // Limit to 80 units for wrapping
 
-        let airQualityForEachBarangay = [];
-        let barangay_names = [];
+                    // Check if adding the current row would exceed page height; add new page if necessary
+                    if (yOffset + 10 * descriptionText.length > pageHeight - 20) {
+                        doc.addPage();
+                        yOffset = 20;
+                        addDailyHeaders();
+                    }
 
-        const promises = barangays.map(barangay => {
-                const air_url = `https://api.openweathermap.org/data/2.5/air_pollution?lat=${barangay.lat}&lon=${barangay.lon}&appid=${apiKey}`;
-                return fetch(air_url)
-                    .then(response => response.json())
-                    .then(data => {
-                        const query_result = data.list[0].main.aqi;
-                        return { name: barangay.name, airQuality: query_result };
-                    });
-            });
+                    // Add text to the PDF, ensuring alignment in each column
+                    doc.text(item.barangay, 10, yOffset);
+                    doc.text(String(item.heatIndex), 60, yOffset);
+                    doc.text(String(item.temperature), 100, yOffset);
+                    doc.text(classificationText, 140, yOffset);
+                    doc.text(descriptionText, 180, yOffset);
 
-            try {
-                const results = await Promise.all(promises);
-                results.forEach(result => {
-                    barangay_names.push(result.name);
-                    airQualityForEachBarangay.push(result.airQuality);
+                    yOffset += 10 * descriptionText.length;
                 });
-        }
-        catch (error) {
-        console.error('Error:', error);
-        }
 
-       // ---------------------------- DATA CUSTOMIZATION FOR CHART STARTS HERE --------------------------------- //
-            const bar_colors = [
-                    '#1eeb3d', // Good - Light Green
-                    '#f2db29', // Fair - Yellow
-                    '#f2aa18', // Moderate - Orange
-                    '#821e05', // Poor - Red
-                    '#d12106' // Very Poor - Bright Red
-                  ]
-            // Air quality levels as string values
-            const airQualityLevels = ['Good', 'Fair', 'Moderate', 'Poor', 'Very Poor'];
-
-            // Convert air quality ratings to corresponding labels
-            const air_quality_background_colors = airQualityForEachBarangay.map(value => bar_colors[value - 1]);
-
-            // Chart.js vertical bar chart
-            new Chart(ctx2, {
-              type: 'bar',
-              data: {
-                labels: barangay_names, // X-axis labels (barangay names)
-                datasets: [{
-                  label: 'Air Quality Rating',
-                  data: airQualityForEachBarangay,
-                  backgroundColor: air_quality_background_colors,
-                  borderWidth: 1
-                }]
-              },
-                options: {
-                        responsive: false, // Turn off responsiveness
-                        maintainAspectRatio: false, // Allow exact width/height settings
-                        scales: {
-                          x: {
-                            title: {
-                              display: true,
-                              text: 'Barangays'
-                            }
-                          },
-                          y: {
-                            title: {
-                              display: true,
-                              text: 'Air Quality Levels'
-                            },
-
-                            ticks: {
-                              callback: function(value, index, values) {
-                                return airQualityLevels[value - 1]; // Map air quality index to string
-                              },
-                              stepSize: 1,
-                            },
-                              labels: ["Good", "Fair", "Moderate", "Poor", "Very Poor"],
-                              min: 0,
-                              max: 5, // Ensure scale matches air quality index range
-                          }
-                        },
+                // Create a pie chart with a single slice labeled "District 6" showing the total count of at-risk people
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: BarangayLabels,
+                        datasets: [{
+                            label: 'District 6',
+                            data: NumberOfAtRiskPeople,
+                            backgroundColor: [
+                            '#FF6384',
+                            "#21130d",
+                            "#1e81b0",
+                            "#eeeee4",
+                            "#e28743",
+                            "#76b5c5",
+                            "#873e23",
+                            "#abdbe3",
+                            "#1F541B",
+                            "#154c79",
+                            "#F1688C", ]
+                        }]
+                    },
+                    options: {
+                        responsive: false,
+                        maintainAspectRatio: false,
                         plugins: {
-                          legend: {
-                            display: false // Hide legend
-                          },
-                          tooltip: {
-                            callbacks: {
-                              title: function(context) {
-                                return `Barangay: ${context[0].label}`;
-                              },
-                              label: function(context) {
-                                const rating = airQualityLevels[context.raw - 1];
-                                return `Air Quality: ${rating}`;
-                              }
-                            }
-                          }
+                            legend: { display: true, position: 'bottom' },
+                            title: { display: true, text: 'At-risk People in Quezon City' },
+                            datalabels: { color: '#fff', font: { weight: 'bold' }, formatter: (value) => value }
                         }
-                      }
+                    },
+                    plugins: [ChartDataLabels]
+                });
+
+                const canvas2 = await returnAirQualityChart();
+                // Convert chart to image and add it to the PDF
+                setTimeout(() => {
+                    const imgData = canvas.toDataURL('image/png');
+                    // Add chart to the PDF on a new page if no space left
+                    if (yOffset + 100 > pageHeight) {
+                        doc.addPage();
+                        yOffset = 20;
+                    }
+                    doc.addImage(imgData, 'PNG', 10, yOffset, 150, 150); // Position and size the chart
+                    yOffset += 150;
+
+                    const airqualimg = canvas2.toDataURL('image/png');
+                    if (yOffset + 100 > pageHeight) {
+                        doc.addPage();
+                        yOffset = 20;
+                    }
+                    doc.addImage(airqualimg, 'PNG', 10, yOffset, 250, 150);
+
+                    doc.save(`Weather_Report_${Date.now()}.pdf`);
+                }, 1000); // Allow time for chart rendering}
+            }
+
+        // WEEKLY WEATHER REPORT
+        else if(dateRange === 'weekly') {
+            addWeeklyHeaders(); // First add the headers
+            const AllHeat = await fetchHeatData("weekly");
+            const barangayStats = {};
+
+            // Cycle through all days and get the average of each Barangay
+            AllHeat.forEach((day) => {
+                // Nested loop, cycle through each Barangay
+                // Use Object.entries to loop through barangays in the day object
+            Object.entries(day).forEach(([barangay, heat]) => {
+                // Initialize the barangay's stats if not already present
+                if (!barangayStats[barangay]) {
+                    barangayStats[barangay] = {
+                        totalTemp: 0,
+                        count: 0,
+                        highestTemp: -Infinity,
+                        lowestTemp: Infinity
+                    };
+                 }
+                        // Update stats for the barangay
+                barangayStats[barangay].totalTemp += heat.hottest_temp;
+                barangayStats[barangay].count += 1;
+                barangayStats[barangay].highestTemp = Math.max(barangayStats[barangay].highestTemp, heat.hottest_temp);
+                barangayStats[barangay].lowestTemp = Math.min(barangayStats[barangay].lowestTemp, heat.hottest_temp);
+            });
+                        });
+
+            const finalStats = {};
+            Object.entries(barangayStats).forEach(([barangay, stats]) => {
+                finalStats[barangay] = {
+                    averagetemp: Math.round((stats.totalTemp / stats.count) * 100) / 100, // Round to nearest tenth
+                    highesttemp: stats.highestTemp,
+                    lowesttemp: stats.lowestTemp
+                };
             });
 
-        // Convert chart to image and add it to the PDF
-        setTimeout(() => {
-            const imgData = canvas.toDataURL('image/png');
+                data.forEach((item) => {
+                const classificationText = getHeatIndexInfo(finalStats[item.barangay].averagetemp).classification;
+                const descriptionText = doc.splitTextToSize(getHeatIndexInfo(finalStats[item.barangay].averagetemp).description, 100); // Limit to 80 units for wrapping
+
+                // Check if adding the current row would exceed page height; add new page if necessary
+                if (yOffset + 10 * descriptionText.length > pageHeight - 20) {
+                    doc.addPage();
+                    yOffset = 20;
+                    addWeeklyHeaders(); // If there is a new page while still writing out the text, add the headers again
+                }
+
+                // Add text to the PDF, ensuring alignment in each column
+                doc.text(item.barangay, 10, yOffset);
+                doc.text(String(finalStats[item.barangay].averagetemp), 60, yOffset);
+                doc.text(String(finalStats[item.barangay].highesttemp), 100, yOffset);
+                doc.text(classificationText, 140, yOffset);
+                doc.text(descriptionText, 180, yOffset);
+
+                yOffset += 10 * descriptionText.length;
+            });
+
+                    // Collect all relevant data and assign them to their own arrays
+                    const barangayNames = Object.keys(finalStats);
+                    const averageTemps = barangayNames.map(name => finalStats[name].averagetemp);
+                    const highestTemps = barangayNames.map(name => finalStats[name].highesttemp);
+                    const lowestTemps = barangayNames.map(name => finalStats[name].lowesttemp);
+
+            const heat_canvas = document.createElement('canvas');
+                  heat_canvas.width = 600;
+                  heat_canvas.height = 300;
+            const heatcontext = heat_canvas.getContext('2d');
+
+            const temperatureChart = new Chart(heatcontext, {
+                type: 'bar',
+                data: {
+                    labels: barangayNames,
+                    datasets: [
+                        {
+                            label: 'Average Temperature (°C)',
+                            data: averageTemps,
+                            backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Highest Temperature (°C)',
+                            data: highestTemps,
+                            backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Lowest Temperature (°C)',
+                            data: lowestTemps,
+                            backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: false,
+                    maintainAspectRatio: false,
+                    plugins: {
+                            legend: { display: true, position: 'bottom' },
+                            title: { display: true, text: 'Weekly Heat Index Data' },
+                            datalabels: { color: '#fff', font: { weight: 'bold' }, formatter: (value) => value },
+                            tooltip: {
+                                callbacks: {
+                                    label: function (context) {
+                                        return `${context.dataset.label}: ${context.raw}°C`;
+                                    }
+                                }
+                            },
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Barangays',
+                            },
+                        },
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Temperature (°C)'
+                            }
+                        }
+                    }
+                }
+            });
 
 
-            // Add chart to the PDF on a new page if no space left
-            if (yOffset + 100 > pageHeight) {
-                doc.addPage();
-                yOffset = 20;
-            }
-            doc.addImage(imgData, 'PNG', 10, yOffset, 150, 150); // Position and size the chart
-            yOffset += 150;
+            // Create a pie chart with a single slice labeled "District 6" showing the total count of at-risk people
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: BarangayLabels,
+                        datasets: [{
+                            label: 'District 6',
+                            data: NumberOfAtRiskPeople,
+                            backgroundColor: [
+                            '#FF6384',
+                            "#21130d",
+                            "#1e81b0",
+                            "#eeeee4",
+                            "#e28743",
+                            "#76b5c5",
+                            "#873e23",
+                            "#abdbe3",
+                            "#1F541B",
+                            "#154c79",
+                            "#F1688C", ]
+                        }]
+                    },
+                    options: {
+                        responsive: false,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: true, position: 'bottom' },
+                            title: { display: true, text: 'At-risk People in Quezon City' },
+                            datalabels: { color: '#fff', font: { weight: 'bold' }, formatter: (value) => value }
+                        }
+                    },
+                    plugins: [ChartDataLabels]
+                });
 
-            const airqualimg = canvas2.toDataURL('image/png');
-            if (yOffset + 100 > pageHeight) {
-                doc.addPage();
-                yOffset = 20;
-            }
-            doc.addImage(airqualimg, 'PNG', 10, yOffset, 250, 150);
+                const canvas2 = await returnAirQualityChart();
+                // Convert chart to image and add it to the PDF
+                setTimeout(() => {
+                    const heat_canvas_data = heat_canvas.toDataURL('image/png');
+                    // Add chart to the PDF on a new page if no space left
+                    if (yOffset + 100 > pageHeight) {
+                        doc.addPage();
+                        yOffset = 20;
+                    }
+                    doc.addImage(heat_canvas_data, 'PNG', 10, yOffset, 250, 150); // Position and size the chart
+                    yOffset += 150;
 
-            doc.save(`Weather_Report_${Date.now()}.pdf`);
-        }, 1000); // Allow time for chart rendering
+                    const imgData = canvas.toDataURL('image/png');
+                    // Add chart to the PDF on a new page if no space left
+                    if (yOffset + 100 > pageHeight) {
+                        doc.addPage();
+                        yOffset = 20;
+                    }
+                    doc.addImage(imgData, 'PNG', 10, yOffset, 150, 150); // Position and size the chart
+                    yOffset += 150;
+
+                    const airqualimg = canvas2.toDataURL('image/png');
+                    // Add chart to the PDF on a new page if no space left
+                    if (yOffset + 100 > pageHeight) {
+                        doc.addPage();
+                        yOffset = 20;
+                    }
+                    doc.addImage(airqualimg, 'PNG', 10, yOffset, 250, 150);
+
+                    doc.save(`Weather_Report_${Date.now()}.pdf`);
+                }, 1000); // Allow time for chart rendering}
+
+        }
+
+        // MONTHYL WEATHER REPORT
+        else if(dateRange === 'monthly') {
+            addWeeklyHeaders(); // First add the headers
+            const AllHeat = await fetchHeatData("monthly");
+            const barangayStats = {};
+
+            // Cycle through all days and get the average of each Barangay
+            AllHeat.forEach((day) => {
+                // Nested loop, cycle through each Barangay
+                // Use Object.entries to loop through barangays in the day object
+            Object.entries(day).forEach(([barangay, heat]) => {
+                // Initialize the barangay's stats if not already present
+                if (!barangayStats[barangay]) {
+                    barangayStats[barangay] = {
+                        totalTemp: 0,
+                        count: 0,
+                        highestTemp: -Infinity,
+                        lowestTemp: Infinity
+                    };
+                 }
+                        // Update stats for the barangay
+                barangayStats[barangay].totalTemp += heat.hottest_temp;
+                barangayStats[barangay].count += 1;
+                barangayStats[barangay].highestTemp = Math.max(barangayStats[barangay].highestTemp, heat.hottest_temp);
+                barangayStats[barangay].lowestTemp = Math.min(barangayStats[barangay].lowestTemp, heat.hottest_temp);
+            });
+                        });
+
+            const finalStats = {};
+            Object.entries(barangayStats).forEach(([barangay, stats]) => {
+                finalStats[barangay] = {
+                    averagetemp: Math.round((stats.totalTemp / stats.count) * 100) / 100, // Round to nearest tenth
+                    highesttemp: stats.highestTemp,
+                    lowesttemp: stats.lowestTemp
+                };
+            });
+
+                data.forEach((item) => {
+                const classificationText = getHeatIndexInfo(finalStats[item.barangay].averagetemp).classification;
+                const descriptionText = doc.splitTextToSize(getHeatIndexInfo(finalStats[item.barangay].averagetemp).description, 100); // Limit to 80 units for wrapping
+                // Check if adding the current row would exceed page height; add new page if necessary
+                if (yOffset + 10 * descriptionText.length > pageHeight - 20) {
+                    doc.addPage();
+                    yOffset = 20;
+                    addWeeklyHeaders(); // If there is a new page while still writing out the text, add the headers again
+                }
+
+                // Add text to the PDF, ensuring alignment in each column
+                doc.text(item.barangay, 10, yOffset);
+                doc.text(String(finalStats[item.barangay].averagetemp), 60, yOffset);
+                doc.text(String(finalStats[item.barangay].highesttemp), 100, yOffset);
+                doc.text(classificationText, 140, yOffset);
+                doc.text(descriptionText, 180, yOffset);
+
+                yOffset += 10 * descriptionText.length;
+            });
+
+                    // Collect all relevant data and assign them to their own arrays
+                    const barangayNames = Object.keys(finalStats);
+                    const averageTemps = barangayNames.map(name => finalStats[name].averagetemp);
+                    const highestTemps = barangayNames.map(name => finalStats[name].highesttemp);
+                    const lowestTemps = barangayNames.map(name => finalStats[name].lowesttemp);
+
+            const heat_canvas = document.createElement('canvas');
+                  heat_canvas.width = 600;
+                  heat_canvas.height = 300;
+            const heatcontext = heat_canvas.getContext('2d');
+
+            const temperatureChart = new Chart(heatcontext, {
+                type: 'bar',
+                data: {
+                    labels: barangayNames,
+                    datasets: [
+                        {
+                            label: 'Average Temperature (°C)',
+                            data: averageTemps,
+                            backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Highest Temperature (°C)',
+                            data: highestTemps,
+                            backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Lowest Temperature (°C)',
+                            data: lowestTemps,
+                            backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: false,
+                    maintainAspectRatio: false,
+                    plugins: {
+                            legend: { display: true, position: 'bottom' },
+                            title: { display: true, text: 'Monthly Heat Index Data' },
+                            datalabels: { color: '#fff', font: { weight: 'bold' }, formatter: (value) => value }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Barangays',
+                            },
+                        },
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Temperature (°C)'
+                            }
+                        }
+                    }
+                }
+            });
+
+
+            // Create a pie chart with a single slice labeled "District 6" showing the total count of at-risk people
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: BarangayLabels,
+                        datasets: [{
+                            label: 'District 6',
+                            data: NumberOfAtRiskPeople,
+                            backgroundColor: [
+                            '#FF6384',
+                            "#21130d",
+                            "#1e81b0",
+                            "#eeeee4",
+                            "#e28743",
+                            "#76b5c5",
+                            "#873e23",
+                            "#abdbe3",
+                            "#1F541B",
+                            "#154c79",
+                            "#F1688C", ]
+                        }]
+                    },
+                    options: {
+                        responsive: false,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: true, position: 'bottom' },
+                            title: { display: true, text: 'At-risk People in Quezon City' },
+                            datalabels: { color: '#fff', font: { weight: 'bold' }, formatter: (value) => value }
+                        }
+                    },
+                    plugins: [ChartDataLabels]
+                });
+
+                const canvas2 = await returnAirQualityChart();
+                // Convert chart to image and add it to the PDF
+                setTimeout(() => {
+                    const heat_canvas_data = heat_canvas.toDataURL('image/png');
+                    // Add chart to the PDF on a new page if no space left
+                    if (yOffset + 100 > pageHeight) {
+                        doc.addPage();
+                        yOffset = 20;
+                    }
+                    doc.addImage(heat_canvas_data, 'PNG', 10, yOffset, 250, 150); // Position and size the chart
+                    yOffset += 150;
+
+                    const imgData = canvas.toDataURL('image/png');
+                    // Add chart to the PDF on a new page if no space left
+                    if (yOffset + 100 > pageHeight) {
+                        doc.addPage();
+                        yOffset = 20;
+                    }
+                    doc.addImage(imgData, 'PNG', 10, yOffset, 150, 150); // Position and size the chart
+                    yOffset += 150;
+
+                    const airqualimg = canvas2.toDataURL('image/png');
+                    // Add chart to the PDF on a new page if no space left
+                    if (yOffset + 100 > pageHeight) {
+                        doc.addPage();
+                        yOffset = 20;
+                    }
+                    doc.addImage(airqualimg, 'PNG', 10, yOffset, 250, 150);
+
+                    doc.save(`Weather_Report_${Date.now()}.pdf`);
+                }, 1000); // Allow time for chart rendering}
+
+        }
     }
 
 
